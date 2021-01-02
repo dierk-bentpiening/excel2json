@@ -3,7 +3,7 @@
 ### Python Extension and Standalone Application
 
 **To Build Python extension run:**  
-python3 BuildExcel2jsonExtension.py build_ext --inplace
+`python3 BuildExcel2jsonExtension.py build_ext --inplace`
 
 **To Build Standalone Application:**  
 `chmod -x BuildStandAlone.sh
