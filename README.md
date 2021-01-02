@@ -10,7 +10,7 @@
 ./BuildStandAlone.sh`
 
 **Usage Extension:**  
-`from excel2json import convert2json
+`from excel2json import convert2json  
 resultjson = convert2json("XLSX/test3.xlsx", "test.txt", "test.json")`
 
 **Usage Standalone:**  
