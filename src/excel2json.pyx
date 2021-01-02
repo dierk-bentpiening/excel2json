@@ -21,11 +21,11 @@ from argparse import ArgumentParser
 import pandas as pd
 import json
 
-
 cdef WelcomeMessage():
     printf("excel2json v 1.0\n")
     printf("©️ 2020 Dierk-Bent Piening\n")
     printf("📧 d.b.piening@gmx.de\n")
+    printf("Software Programmed with ❤️ in Germany.\n")
     printf("\nThis program is free software: you can redistribute it and/or modify\nit under the terms of the GNU General Public License as published by\nthe Free Software Foundation, either version 3 of the License, or\n(at your option) any later version.\n\n")
 
 cdef ReadXLSX(filename, outputfiletxt, outputfilejson):
