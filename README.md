@@ -14,6 +14,6 @@
 resultjson = convert2json("XLSX/test3.xlsx", "test.txt", "test.json")`
 
 **Usage Standalone:**  
-usage: excel2json.run [-h] --input INPUT --outputjson OUTPUTJSON --outputtxt OUTPUTTXT
+`usage: excel2json.run [-h] --input INPUT --outputjson OUTPUTJSON --outputtxt OUTPUTTXT`
 
 
