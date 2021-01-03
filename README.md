@@ -1,8 +1,8 @@
 # excel2json
-### Convert XLSX to json and txt.  
-### Python Extension and Standalone Application
+## Convert XLSX to json and txt.  
+## Python Extension and Standalone Application
 
-#### Where can i download a Release:
+### Where can i download a Release:
 Builded Binary versions for standalone usage and as python extension are available under the Release section.  
 We Provide versions for:  
 
@@ -11,7 +11,7 @@ Windows ARM64
 Linux x86_64  
 Linux ARM64  
 
-#### Build it by yourself:
+### Build it by yourself:
 
 **To Build Python extension:**  
 
@@ -37,7 +37,7 @@ Change Python version in BuildStandAlone.sh to the mathing version of Python3 in
 `chmod -x BuildStandAlone.sh`  
 `./BuildStandAlone.sh`  
 
-#### How to use it ?  
+### How to use it ?  
 
 **Usage Extension:**
   
