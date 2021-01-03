@@ -4,12 +4,16 @@
 
 ### Where can i download a Release:
 Builded Binary versions for standalone usage and as python extension are available under the Release section.  
-We Provide versions for:  
+I Provide versions for:  
 
 Windows x86_64  
 Windows ARM64  
 Linux x86_64  
 Linux ARM64  
+MacOS x86_64 (Future)  
+MacOS ARM64 (Future)  
+(Linux x86_64 versions should also work on MacOS)
+
 
 ### Build it by yourself:
 
@@ -50,7 +54,13 @@ Change Python version in BuildStandAlone.sh to the mathing version of Python3 in
   
   
   
+
   
+### Future ?
+In the Future more options to customize JSON will be available also a Option to select a range of Columns and Rows.  
+In the Future also an option for converting Excel to a sqlite DB / Create Script for PostgreeSQL will be available.  
+
+
 
 **Software Programmed with ❤️ in Germany.**  
 **We ❤️ open source!**  
