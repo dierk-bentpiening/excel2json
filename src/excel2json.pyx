@@ -28,19 +28,21 @@ cdef WelcomeMessage():
     printf("Software Programmed with ❤️ in Germany.\n")
     printf("\nThis program is free software: you can redistribute it and/or modify\nit under the terms of the GNU General Public License as published by\nthe Free Software Foundation, either version 3 of the License, or\n(at your option) any later version.\n\n")
 
-cdef ReadXLSX(filename, outputfiletxt, outputfilejson):
+cdef ReadXLSX(filename, outputfiletxt, outputfilejson, sheetname):
     vdconverteddict = dict()
     vsrow = ""
     try:
-        vdexceldic = pd.read_excel(filename, engine='openpyxl', index_col=0).to_dict()
+        vdexceldic = pd.read_excel(filename, engine='openpyxl', index_col=0, sheet_name=sheetname).to_dict()
         print("File read: " + filename)
     except Exception as e:
         print("Error: Could not open XLSX file! ", str(e))
+        exit()
     try:
         fobj_txt = open(outputfiletxt, "w")
         fobj_json = open(outputfilejson, "w")
     except Exception as e:
         print("Error: Could not open output file! ", str(e))
+        exit()
 
     for p_id, p_info in vdexceldic.items():
         vdconverteddict[p_id] = list(p_info.values())
@@ -56,16 +58,18 @@ cdef ReadXLSX(filename, outputfiletxt, outputfilejson):
         fobj_txt.close()
     except Exception as e:
         print("Error: Could not flush & close file! ", str(e))
+        exit()
     try:
         fobj_json.flush()
         fobj_json.close()
     except Exception as e:
         print("Error: Could not flush & close file! ", str(e))
+        exit()
 
     return json.dumps(str(vdconverteddict))
 
-def convert2json(filename, outputfiletxt, outputfilejson):
-    return ReadXLSX(filename, outputfiletxt, outputfilejson)
+def convert2json(filename, outputfiletxt, outputfilejson, sheetname):
+    return ReadXLSX(filename, outputfiletxt, outputfilejson, sheetname)
 
 if __name__ == '__main__':
     WelcomeMessage()
@@ -74,5 +78,6 @@ if __name__ == '__main__':
     vapparser.add_argument("--input", "-i", type=str, required=True)
     vapparser.add_argument("--outputjson", "-oj", type=str, required=True)
     vapparser.add_argument("--outputtxt", "-ot", type= str, required=True)
+    vapparser.add_argument("--sheetname", "-sn", type= str, required=True)
     args = vapparser.parse_args()
-    ReadXLSX(args.input, args.outputtxt, args.outputjson)
+    ReadXLSX(args.input, args.outputtxt, args.outputjson, args.sheetname)
