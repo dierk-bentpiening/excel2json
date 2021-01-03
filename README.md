@@ -13,7 +13,7 @@ Linux ARM64
 
 #### Build it by yourself:
 
-**To Build Python extension run:**  
+**To Build Python extension:**  
 
 Make sure that python3, python3-pip, python3-dev and cython3 is installed on your system.  
 To do that on Debian / Ubuntu Linux type the following in to your terminal: 
@@ -46,7 +46,10 @@ Change Python version in BuildStandAlone.sh to the mathing version of Python3 in
 
 **Usage Standalone:**    
 `usage: excel2json.run [-h] --input INPUT --outputjson OUTPUTJSON --outputtxt OUTPUTTXT --sheetname SHEETNAME`
-
+  
+  
+  
+  
 
 **Software Programmed with ❤️ in Germany.**  
 **We ❤️ open source!**  
