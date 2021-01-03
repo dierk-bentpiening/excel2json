@@ -17,6 +17,6 @@
 `usage: excel2json.run [-h] --input INPUT --outputjson OUTPUTJSON --outputtxt OUTPUTTXT`
 
 
-**Software Programmed with ❤️ in Germany.**
+**Software Programmed with ❤️ in Germany.**  
 **We ❤️ open source!**
 
