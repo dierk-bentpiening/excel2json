@@ -32,6 +32,7 @@ Make sure that python3, python3-pip, python3-dev and cython3 is installed on you
 To do that on Debian / Ubuntu Linux type the following in to your terminal:  
 
 `sudo apt install python3 python3-pip python3-dev cython`  
+  
 Change Python version in BuildStandAlone.sh to the mathing version of Python3 installed on your system.  
  
 `chmod -x BuildStandAlone.sh`  
