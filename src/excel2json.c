@@ -1133,21 +1133,40 @@ static int __Pyx_ParseOptionalKeywords(PyObject *kwds, PyObject **argnames[],\
     PyObject *kwds2, PyObject *values[], Py_ssize_t num_pos_args,\
     const char* function_name);
 
-/* IncludeStringH.proto */
-#include <string.h>
-
-/* PyObject_GenericGetAttrNoDict.proto */
-#if CYTHON_USE_TYPE_SLOTS && CYTHON_USE_PYTYPE_LOOKUP && PY_VERSION_HEX < 0x03070000
-static CYTHON_INLINE PyObject* __Pyx_PyObject_GenericGetAttrNoDict(PyObject* obj, PyObject* attr_name);
+/* PyObjectLookupSpecial.proto */
+#if CYTHON_USE_PYTYPE_LOOKUP && CYTHON_USE_TYPE_SLOTS
+static CYTHON_INLINE PyObject* __Pyx_PyObject_LookupSpecial(PyObject* obj, PyObject* attr_name) {
+    PyObject *res;
+    PyTypeObject *tp = Py_TYPE(obj);
+#if PY_MAJOR_VERSION < 3
+    if (unlikely(PyInstance_Check(obj)))
+        return __Pyx_PyObject_GetAttrStr(obj, attr_name);
+#endif
+    res = _PyType_Lookup(tp, attr_name);
+    if (likely(res)) {
+        descrgetfunc f = Py_TYPE(res)->tp_descr_get;
+        if (!f) {
+            Py_INCREF(res);
+        } else {
+            res = f(res, obj, (PyObject *)tp);
+        }
+    } else {
+        PyErr_SetObject(PyExc_AttributeError, attr_name);
+    }
+    return res;
+}
 #else
-#define __Pyx_PyObject_GenericGetAttrNoDict PyObject_GenericGetAttr
+#define __Pyx_PyObject_LookupSpecial(o,n) __Pyx_PyObject_GetAttrStr(o,n)
 #endif
 
-/* Import.proto */
-static PyObject *__Pyx_Import(PyObject *name, PyObject *from_list, int level);
+/* SliceObject.proto */
+static CYTHON_INLINE PyObject* __Pyx_PyObject_GetSlice(
+        PyObject* obj, Py_ssize_t cstart, Py_ssize_t cstop,
+        PyObject** py_start, PyObject** py_stop, PyObject** py_slice,
+        int has_cstart, int has_cstop, int wraparound);
 
-/* ImportFrom.proto */
-static PyObject* __Pyx_ImportFrom(PyObject* module, PyObject* name);
+/* IncludeStringH.proto */
+#include <string.h>
 
 /* BytesEquals.proto */
 static CYTHON_INLINE int __Pyx_PyBytes_Equals(PyObject* s1, PyObject* s2, int equals);
@@ -1186,6 +1205,19 @@ static CYTHON_INLINE void __Pyx_ErrFetchInState(PyThreadState *tstate, PyObject 
 #define __Pyx_ErrRestore(type, value, tb)  PyErr_Restore(type, value, tb)
 #define __Pyx_ErrFetch(type, value, tb)  PyErr_Fetch(type, value, tb)
 #endif
+
+/* PyObject_GenericGetAttrNoDict.proto */
+#if CYTHON_USE_TYPE_SLOTS && CYTHON_USE_PYTYPE_LOOKUP && PY_VERSION_HEX < 0x03070000
+static CYTHON_INLINE PyObject* __Pyx_PyObject_GenericGetAttrNoDict(PyObject* obj, PyObject* attr_name);
+#else
+#define __Pyx_PyObject_GenericGetAttrNoDict PyObject_GenericGetAttr
+#endif
+
+/* Import.proto */
+static PyObject *__Pyx_Import(PyObject *name, PyObject *from_list, int level);
+
+/* ImportFrom.proto */
+static PyObject* __Pyx_ImportFrom(PyObject* module, PyObject* name);
 
 /* CLineInTraceback.proto */
 #ifdef CYTHON_CLINE_IN_TRACEBACK
@@ -1356,6 +1388,7 @@ static PyTypeObject *__pyx_ptype_10excel2json___pyx_scope_struct____pyx_f_10exce
 static PyTypeObject *__pyx_ptype_10excel2json___pyx_scope_struct_1_genexpr = 0;
 static PyObject *__pyx_f_10excel2json_WelcomeMessage(void); /*proto*/
 static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *, PyObject *, PyObject *, PyObject *); /*proto*/
+static PyObject *__pyx_f_10excel2json_filewalker(PyObject *, PyObject *); /*proto*/
 #define __Pyx_MODULE_NAME "excel2json"
 extern int __pyx_module_is_main_excel2json;
 int __pyx_module_is_main_excel2json = 0;
@@ -1368,6 +1401,7 @@ static const char __pyx_k_[] = "";
 static const char __pyx_k_i[] = "-i";
 static const char __pyx_k_w[] = "w";
 static const char __pyx_k__2[] = "\n";
+static const char __pyx_k_bp[] = "-bp";
 static const char __pyx_k_oj[] = "-oj";
 static const char __pyx_k_os[] = "os";
 static const char __pyx_k_ot[] = "-ot";
@@ -1375,37 +1409,46 @@ static const char __pyx_k_pd[] = "pd";
 static const char __pyx_k_sn[] = "-sn";
 static const char __pyx_k_end[] = "end";
 static const char __pyx_k_sys[] = "sys";
+static const char __pyx_k_txt[] = ".txt";
 static const char __pyx_k_zip[] = "zip";
 static const char __pyx_k_args[] = "args";
 static const char __pyx_k_exit[] = "exit";
 static const char __pyx_k_file[] = "file";
 static const char __pyx_k_json[] = "json";
 static const char __pyx_k_main[] = "__main__";
-static const char __pyx_k_name[] = "__name__";
+static const char __pyx_k_name[] = "name";
 static const char __pyx_k_open[] = "open";
+static const char __pyx_k_path[] = "path";
 static const char __pyx_k_send[] = "send";
 static const char __pyx_k_test[] = "__test__";
 static const char __pyx_k_type[] = "type";
+static const char __pyx_k_xlsx[] = "xlsx";
 static const char __pyx_k_close[] = "close";
 static const char __pyx_k_dumps[] = "dumps";
+static const char __pyx_k_enter[] = "__enter__";
 static const char __pyx_k_flush[] = "flush";
 static const char __pyx_k_input[] = "--input";
+static const char __pyx_k_isdir[] = "isdir";
 static const char __pyx_k_items[] = "items";
 static const char __pyx_k_print[] = "print";
 static const char __pyx_k_throw[] = "throw";
 static const char __pyx_k_write[] = "write";
 static const char __pyx_k_engine[] = "engine";
+static const char __pyx_k_exit_2[] = "__exit__";
 static const char __pyx_k_import[] = "__import__";
+static const char __pyx_k_json_2[] = ".json";
+static const char __pyx_k_name_2[] = "__name__";
 static const char __pyx_k_pandas[] = "pandas";
 static const char __pyx_k_values[] = "values";
 static const char __pyx_k_genexpr[] = "genexpr";
 static const char __pyx_k_input_2[] = "input";
+static const char __pyx_k_scandir[] = "scandir";
 static const char __pyx_k_to_dict[] = "to_dict";
 static const char __pyx_k_argparse[] = "argparse";
 static const char __pyx_k_filename[] = "filename";
 static const char __pyx_k_openpyxl[] = "openpyxl";
-static const char __pyx_k_required[] = "required";
 static const char __pyx_k_File_read[] = "File read: ";
+static const char __pyx_k_batchpath[] = "--batchpath";
 static const char __pyx_k_index_col[] = "index_col";
 static const char __pyx_k_outputtxt[] = "--outputtxt";
 static const char __pyx_k_sheetname[] = "sheetname";
@@ -1415,19 +1458,25 @@ static const char __pyx_k_outputjson[] = "--outputjson";
 static const char __pyx_k_parse_args[] = "parse_args";
 static const char __pyx_k_read_excel[] = "read_excel";
 static const char __pyx_k_sheet_name[] = "sheet_name";
+static const char __pyx_k_batchpath_2[] = "batchpath";
 static const char __pyx_k_outputtxt_2[] = "outputtxt";
 static const char __pyx_k_sheetname_2[] = "--sheetname";
+static const char __pyx_k_using_sheet[] = "; using sheet: ";
+static const char __pyx_k_INFO_Skipped[] = "INFO: Skipped ";
 static const char __pyx_k_add_argument[] = "add_argument";
 static const char __pyx_k_convert2json[] = "convert2json";
 static const char __pyx_k_outputjson_2[] = "outputjson";
 static const char __pyx_k_outputfiletxt[] = "outputfiletxt";
 static const char __pyx_k_ArgumentParser[] = "ArgumentParser";
 static const char __pyx_k_outputfilejson[] = "outputfilejson";
+static const char __pyx_k_Not_an_XLSX_File[] = "; Not an XLSX File";
+static const char __pyx_k_using_first_sheet[] = "; using first sheet";
 static const char __pyx_k_cline_in_traceback[] = "cline_in_traceback";
 static const char __pyx_k_src_excel2json_pyx[] = "src/excel2json.pyx";
 static const char __pyx_k_ReadXLSX_locals_genexpr[] = "ReadXLSX.<locals>.genexpr";
 static const char __pyx_k_Error_Could_not_write_file[] = "Error: Could not write file! ";
-static const char __pyx_k_Error_Could_not_open_XLSX_file[] = "Error: Could not open XLSX file! ";
+static const char __pyx_k_Running_in_Batch_mode_on_path[] = "Running in Batch mode on path: ";
+static const char __pyx_k_Error_Could_not_open_XLSX_file[] = "Error: Could not open XLSX file: ";
 static const char __pyx_k_Copyright_2020_Dierk_Bent_Pieni[] = "\nCopyright 2020 Dierk-Bent Piening\n\nThis program is free software: you can redistribute it and/or modify\nit under the terms of the GNU General Public License as published by\nthe Free Software Foundation, either version 3 of the License, or\n(at your option) any later version.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\n\nYou should have received a copy of the GNU General Public License\nalong with this program.  If not, see <http://www.gnu.org/licenses/>.\n";
 static const char __pyx_k_Error_Could_not_flush_close_file[] = "Error: Could not flush & close file! ";
 static const char __pyx_k_Error_Could_not_open_output_file[] = "Error: Could not open output file! ";
@@ -1438,19 +1487,27 @@ static PyObject *__pyx_kp_s_Error_Could_not_open_XLSX_file;
 static PyObject *__pyx_kp_s_Error_Could_not_open_output_file;
 static PyObject *__pyx_kp_s_Error_Could_not_write_file;
 static PyObject *__pyx_kp_s_File_read;
+static PyObject *__pyx_kp_s_INFO_Skipped;
+static PyObject *__pyx_kp_s_Not_an_XLSX_File;
 static PyObject *__pyx_n_s_ReadXLSX_locals_genexpr;
+static PyObject *__pyx_kp_s_Running_in_Batch_mode_on_path;
 static PyObject *__pyx_kp_s__2;
 static PyObject *__pyx_n_s_add_argument;
 static PyObject *__pyx_n_s_argparse;
 static PyObject *__pyx_n_s_args;
+static PyObject *__pyx_kp_s_batchpath;
+static PyObject *__pyx_n_s_batchpath_2;
+static PyObject *__pyx_kp_s_bp;
 static PyObject *__pyx_n_s_cline_in_traceback;
 static PyObject *__pyx_n_s_close;
 static PyObject *__pyx_n_s_convert2json;
 static PyObject *__pyx_n_s_dumps;
 static PyObject *__pyx_n_s_end;
 static PyObject *__pyx_n_s_engine;
+static PyObject *__pyx_n_s_enter;
 static PyObject *__pyx_n_s_excel2json;
 static PyObject *__pyx_n_s_exit;
+static PyObject *__pyx_n_s_exit_2;
 static PyObject *__pyx_n_s_file;
 static PyObject *__pyx_n_s_filename;
 static PyObject *__pyx_n_s_flush;
@@ -1460,10 +1517,13 @@ static PyObject *__pyx_n_s_import;
 static PyObject *__pyx_n_s_index_col;
 static PyObject *__pyx_kp_s_input;
 static PyObject *__pyx_n_s_input_2;
+static PyObject *__pyx_n_s_isdir;
 static PyObject *__pyx_n_s_items;
 static PyObject *__pyx_n_s_json;
+static PyObject *__pyx_kp_s_json_2;
 static PyObject *__pyx_n_s_main;
 static PyObject *__pyx_n_s_name;
+static PyObject *__pyx_n_s_name_2;
 static PyObject *__pyx_kp_s_oj;
 static PyObject *__pyx_n_s_open;
 static PyObject *__pyx_n_s_openpyxl;
@@ -1477,10 +1537,11 @@ static PyObject *__pyx_kp_s_outputtxt;
 static PyObject *__pyx_n_s_outputtxt_2;
 static PyObject *__pyx_n_s_pandas;
 static PyObject *__pyx_n_s_parse_args;
+static PyObject *__pyx_n_s_path;
 static PyObject *__pyx_n_s_pd;
 static PyObject *__pyx_n_s_print;
 static PyObject *__pyx_n_s_read_excel;
-static PyObject *__pyx_n_s_required;
+static PyObject *__pyx_n_s_scandir;
 static PyObject *__pyx_n_s_send;
 static PyObject *__pyx_n_s_sheet_name;
 static PyObject *__pyx_n_s_sheetname;
@@ -1491,11 +1552,15 @@ static PyObject *__pyx_n_s_sys;
 static PyObject *__pyx_n_s_test;
 static PyObject *__pyx_n_s_throw;
 static PyObject *__pyx_n_s_to_dict;
+static PyObject *__pyx_kp_s_txt;
 static PyObject *__pyx_n_s_type;
+static PyObject *__pyx_kp_s_using_first_sheet;
+static PyObject *__pyx_kp_s_using_sheet;
 static PyObject *__pyx_n_s_values;
 static PyObject *__pyx_n_s_vapparser;
 static PyObject *__pyx_n_s_w;
 static PyObject *__pyx_n_s_write;
+static PyObject *__pyx_n_s_xlsx;
 static PyObject *__pyx_n_s_zip;
 static PyObject *__pyx_pf_10excel2json_8ReadXLSX_genexpr(PyObject *__pyx_self); /* proto */
 static PyObject *__pyx_pf_10excel2json_convert2json(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_filename, PyObject *__pyx_v_outputfiletxt, PyObject *__pyx_v_outputfilejson, PyObject *__pyx_v_sheetname); /* proto */
@@ -1503,19 +1568,25 @@ static PyObject *__pyx_tp_new_10excel2json___pyx_scope_struct____pyx_f_10excel2j
 static PyObject *__pyx_tp_new_10excel2json___pyx_scope_struct_1_genexpr(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
 static __Pyx_CachedCFunction __pyx_umethod_PyDict_Type_items = {0, &__pyx_n_s_items, 0, 0, 0};
 static PyObject *__pyx_int_0;
-static PyObject *__pyx_tuple__3;
+static PyObject *__pyx_int_neg_4;
+static PyObject *__pyx_int_neg_5;
+static PyObject *__pyx_slice__3;
+static PyObject *__pyx_slice__4;
 static PyObject *__pyx_tuple__5;
 static PyObject *__pyx_tuple__6;
-static PyObject *__pyx_tuple__7;
 static PyObject *__pyx_tuple__8;
-static PyObject *__pyx_codeobj__4;
+static PyObject *__pyx_tuple__9;
+static PyObject *__pyx_tuple__10;
+static PyObject *__pyx_tuple__11;
+static PyObject *__pyx_tuple__12;
+static PyObject *__pyx_codeobj__7;
 /* Late includes */
 
 /* "excel2json.pyx":24
  * import json
  * 
  * cdef WelcomeMessage():             # <<<<<<<<<<<<<<
- *     printf("excel2json v 1.0\n")
+ *     printf("excel2json v 1.2\n")
  *     printf(" 2020 Dierk-Bent Piening\n")
  */
 
@@ -1527,15 +1598,15 @@ static PyObject *__pyx_f_10excel2json_WelcomeMessage(void) {
   /* "excel2json.pyx":25
  * 
  * cdef WelcomeMessage():
- *     printf("excel2json v 1.0\n")             # <<<<<<<<<<<<<<
+ *     printf("excel2json v 1.2\n")             # <<<<<<<<<<<<<<
  *     printf(" 2020 Dierk-Bent Piening\n")
  *     printf(" d.b.piening@gmx.de\n")
  */
-  (void)(printf(((char const *)"excel2json v 1.0\n")));
+  (void)(printf(((char const *)"excel2json v 1.2\n")));
 
   /* "excel2json.pyx":26
  * cdef WelcomeMessage():
- *     printf("excel2json v 1.0\n")
+ *     printf("excel2json v 1.2\n")
  *     printf(" 2020 Dierk-Bent Piening\n")             # <<<<<<<<<<<<<<
  *     printf(" d.b.piening@gmx.de\n")
  *     printf("Software Programmed with  in Germany.\n")
@@ -1543,7 +1614,7 @@ static PyObject *__pyx_f_10excel2json_WelcomeMessage(void) {
   (void)(printf(((char const *)"\302\251\357\270\217 2020 Dierk-Bent Piening\n")));
 
   /* "excel2json.pyx":27
- *     printf("excel2json v 1.0\n")
+ *     printf("excel2json v 1.2\n")
  *     printf(" 2020 Dierk-Bent Piening\n")
  *     printf(" d.b.piening@gmx.de\n")             # <<<<<<<<<<<<<<
  *     printf("Software Programmed with  in Germany.\n")
@@ -1573,7 +1644,7 @@ static PyObject *__pyx_f_10excel2json_WelcomeMessage(void) {
  * import json
  * 
  * cdef WelcomeMessage():             # <<<<<<<<<<<<<<
- *     printf("excel2json v 1.0\n")
+ *     printf("excel2json v 1.2\n")
  *     printf(" 2020 Dierk-Bent Piening\n")
  */
 
@@ -1815,10 +1886,10 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
   PyObject *__pyx_t_7 = NULL;
   PyObject *__pyx_t_8 = NULL;
   int __pyx_t_9;
-  Py_ssize_t __pyx_t_10;
-  PyObject *(*__pyx_t_11)(PyObject *);
+  PyObject *__pyx_t_10 = NULL;
+  Py_ssize_t __pyx_t_11;
   PyObject *(*__pyx_t_12)(PyObject *);
-  PyObject *__pyx_t_13 = NULL;
+  PyObject *(*__pyx_t_13)(PyObject *);
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
@@ -1924,7 +1995,7 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
  *         vdexceldic = pd.read_excel(filename, engine='openpyxl', index_col=0, sheet_name=sheetname).to_dict()
  *         print("File read: " + filename)             # <<<<<<<<<<<<<<
  *     except Exception as e:
- *         print("Error: Could not open XLSX file! ", str(e))
+ *         print("Error: Could not open XLSX file: " + filename , str(e))
  */
       __pyx_t_1 = PyNumber_Add(__pyx_kp_s_File_read, __pyx_v_filename); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 36, __pyx_L3_error)
       __Pyx_GOTREF(__pyx_t_1);
@@ -1954,7 +2025,7 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
  *         vdexceldic = pd.read_excel(filename, engine='openpyxl', index_col=0, sheet_name=sheetname).to_dict()
  *         print("File read: " + filename)
  *     except Exception as e:             # <<<<<<<<<<<<<<
- *         print("Error: Could not open XLSX file! ", str(e))
+ *         print("Error: Could not open XLSX file: " + filename , str(e))
  *         exit()
  */
     __pyx_t_9 = __Pyx_PyErr_ExceptionMatches(((PyObject *)(&((PyTypeObject*)PyExc_Exception)[0])));
@@ -1970,33 +2041,35 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
       /* "excel2json.pyx":38
  *         print("File read: " + filename)
  *     except Exception as e:
- *         print("Error: Could not open XLSX file! ", str(e))             # <<<<<<<<<<<<<<
+ *         print("Error: Could not open XLSX file: " + filename , str(e))             # <<<<<<<<<<<<<<
  *         exit()
  *     try:
  */
-      __pyx_t_5 = __Pyx_PyObject_CallOneArg(((PyObject *)(&PyString_Type)), __pyx_v_e); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 38, __pyx_L5_except_error)
+      __pyx_t_5 = PyNumber_Add(__pyx_kp_s_Error_Could_not_open_XLSX_file, __pyx_v_filename); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 38, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_5);
-      __pyx_t_6 = PyTuple_New(2); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 38, __pyx_L5_except_error)
+      __pyx_t_6 = __Pyx_PyObject_CallOneArg(((PyObject *)(&PyString_Type)), __pyx_v_e); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 38, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_6);
-      __Pyx_INCREF(__pyx_kp_s_Error_Could_not_open_XLSX_file);
-      __Pyx_GIVEREF(__pyx_kp_s_Error_Could_not_open_XLSX_file);
-      PyTuple_SET_ITEM(__pyx_t_6, 0, __pyx_kp_s_Error_Could_not_open_XLSX_file);
+      __pyx_t_10 = PyTuple_New(2); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 38, __pyx_L5_except_error)
+      __Pyx_GOTREF(__pyx_t_10);
       __Pyx_GIVEREF(__pyx_t_5);
-      PyTuple_SET_ITEM(__pyx_t_6, 1, __pyx_t_5);
+      PyTuple_SET_ITEM(__pyx_t_10, 0, __pyx_t_5);
+      __Pyx_GIVEREF(__pyx_t_6);
+      PyTuple_SET_ITEM(__pyx_t_10, 1, __pyx_t_6);
       __pyx_t_5 = 0;
-      if (__Pyx_PrintOne(0, __pyx_t_6) < 0) __PYX_ERR(0, 38, __pyx_L5_except_error)
-      __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+      __pyx_t_6 = 0;
+      if (__Pyx_PrintOne(0, __pyx_t_10) < 0) __PYX_ERR(0, 38, __pyx_L5_except_error)
+      __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
 
       /* "excel2json.pyx":39
  *     except Exception as e:
- *         print("Error: Could not open XLSX file! ", str(e))
+ *         print("Error: Could not open XLSX file: " + filename , str(e))
  *         exit()             # <<<<<<<<<<<<<<
  *     try:
  *         fobj_txt = open(outputfiletxt, "w")
  */
-      __pyx_t_6 = __Pyx_PyObject_CallNoArg(__pyx_builtin_exit); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 39, __pyx_L5_except_error)
-      __Pyx_GOTREF(__pyx_t_6);
-      __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+      __pyx_t_10 = __Pyx_PyObject_CallNoArg(__pyx_builtin_exit); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 39, __pyx_L5_except_error)
+      __Pyx_GOTREF(__pyx_t_10);
+      __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
       __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
       __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
       __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
@@ -2026,7 +2099,7 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
   }
 
   /* "excel2json.pyx":40
- *         print("Error: Could not open XLSX file! ", str(e))
+ *         print("Error: Could not open XLSX file: " + filename , str(e))
  *         exit()
  *     try:             # <<<<<<<<<<<<<<
  *         fobj_txt = open(outputfiletxt, "w")
@@ -2084,7 +2157,7 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
       __pyx_t_8 = 0;
 
       /* "excel2json.pyx":40
- *         print("Error: Could not open XLSX file! ", str(e))
+ *         print("Error: Could not open XLSX file: " + filename , str(e))
  *         exit()
  *     try:             # <<<<<<<<<<<<<<
  *         fobj_txt = open(outputfiletxt, "w")
@@ -2097,6 +2170,7 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
     goto __pyx_L16_try_end;
     __pyx_L11_error:;
     __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
+    __Pyx_XDECREF(__pyx_t_10); __pyx_t_10 = 0;
     __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
     __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
@@ -2126,18 +2200,18 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
  *         exit()
  * 
  */
-      __pyx_t_6 = __Pyx_PyObject_CallOneArg(((PyObject *)(&PyString_Type)), __pyx_v_e); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 44, __pyx_L13_except_error)
+      __pyx_t_10 = __Pyx_PyObject_CallOneArg(((PyObject *)(&PyString_Type)), __pyx_v_e); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 44, __pyx_L13_except_error)
+      __Pyx_GOTREF(__pyx_t_10);
+      __pyx_t_6 = PyTuple_New(2); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 44, __pyx_L13_except_error)
       __Pyx_GOTREF(__pyx_t_6);
-      __pyx_t_5 = PyTuple_New(2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 44, __pyx_L13_except_error)
-      __Pyx_GOTREF(__pyx_t_5);
       __Pyx_INCREF(__pyx_kp_s_Error_Could_not_open_output_file);
       __Pyx_GIVEREF(__pyx_kp_s_Error_Could_not_open_output_file);
-      PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_kp_s_Error_Could_not_open_output_file);
-      __Pyx_GIVEREF(__pyx_t_6);
-      PyTuple_SET_ITEM(__pyx_t_5, 1, __pyx_t_6);
-      __pyx_t_6 = 0;
-      if (__Pyx_PrintOne(0, __pyx_t_5) < 0) __PYX_ERR(0, 44, __pyx_L13_except_error)
-      __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+      PyTuple_SET_ITEM(__pyx_t_6, 0, __pyx_kp_s_Error_Could_not_open_output_file);
+      __Pyx_GIVEREF(__pyx_t_10);
+      PyTuple_SET_ITEM(__pyx_t_6, 1, __pyx_t_10);
+      __pyx_t_10 = 0;
+      if (__Pyx_PrintOne(0, __pyx_t_6) < 0) __PYX_ERR(0, 44, __pyx_L13_except_error)
+      __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
 
       /* "excel2json.pyx":45
  *     except Exception as e:
@@ -2146,9 +2220,9 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
  * 
  *     for p_id, p_info in vdexceldic.items():
  */
-      __pyx_t_5 = __Pyx_PyObject_CallNoArg(__pyx_builtin_exit); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 45, __pyx_L13_except_error)
-      __Pyx_GOTREF(__pyx_t_5);
-      __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+      __pyx_t_6 = __Pyx_PyObject_CallNoArg(__pyx_builtin_exit); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 45, __pyx_L13_except_error)
+      __Pyx_GOTREF(__pyx_t_6);
+      __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
       __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
       __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
       __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -2158,7 +2232,7 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
     __pyx_L13_except_error:;
 
     /* "excel2json.pyx":40
- *         print("Error: Could not open XLSX file! ", str(e))
+ *         print("Error: Could not open XLSX file: " + filename , str(e))
  *         exit()
  *     try:             # <<<<<<<<<<<<<<
  *         fobj_txt = open(outputfiletxt, "w")
@@ -2203,35 +2277,35 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
   if (likely(PyList_CheckExact(__pyx_t_1)) || PyTuple_CheckExact(__pyx_t_1)) {
-    __pyx_t_7 = __pyx_t_1; __Pyx_INCREF(__pyx_t_7); __pyx_t_10 = 0;
-    __pyx_t_11 = NULL;
+    __pyx_t_7 = __pyx_t_1; __Pyx_INCREF(__pyx_t_7); __pyx_t_11 = 0;
+    __pyx_t_12 = NULL;
   } else {
-    __pyx_t_10 = -1; __pyx_t_7 = PyObject_GetIter(__pyx_t_1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 47, __pyx_L1_error)
+    __pyx_t_11 = -1; __pyx_t_7 = PyObject_GetIter(__pyx_t_1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 47, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
-    __pyx_t_11 = Py_TYPE(__pyx_t_7)->tp_iternext; if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 47, __pyx_L1_error)
+    __pyx_t_12 = Py_TYPE(__pyx_t_7)->tp_iternext; if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 47, __pyx_L1_error)
   }
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   for (;;) {
-    if (likely(!__pyx_t_11)) {
+    if (likely(!__pyx_t_12)) {
       if (likely(PyList_CheckExact(__pyx_t_7))) {
-        if (__pyx_t_10 >= PyList_GET_SIZE(__pyx_t_7)) break;
+        if (__pyx_t_11 >= PyList_GET_SIZE(__pyx_t_7)) break;
         #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-        __pyx_t_1 = PyList_GET_ITEM(__pyx_t_7, __pyx_t_10); __Pyx_INCREF(__pyx_t_1); __pyx_t_10++; if (unlikely(0 < 0)) __PYX_ERR(0, 47, __pyx_L1_error)
+        __pyx_t_1 = PyList_GET_ITEM(__pyx_t_7, __pyx_t_11); __Pyx_INCREF(__pyx_t_1); __pyx_t_11++; if (unlikely(0 < 0)) __PYX_ERR(0, 47, __pyx_L1_error)
         #else
-        __pyx_t_1 = PySequence_ITEM(__pyx_t_7, __pyx_t_10); __pyx_t_10++; if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 47, __pyx_L1_error)
+        __pyx_t_1 = PySequence_ITEM(__pyx_t_7, __pyx_t_11); __pyx_t_11++; if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 47, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_1);
         #endif
       } else {
-        if (__pyx_t_10 >= PyTuple_GET_SIZE(__pyx_t_7)) break;
+        if (__pyx_t_11 >= PyTuple_GET_SIZE(__pyx_t_7)) break;
         #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-        __pyx_t_1 = PyTuple_GET_ITEM(__pyx_t_7, __pyx_t_10); __Pyx_INCREF(__pyx_t_1); __pyx_t_10++; if (unlikely(0 < 0)) __PYX_ERR(0, 47, __pyx_L1_error)
+        __pyx_t_1 = PyTuple_GET_ITEM(__pyx_t_7, __pyx_t_11); __Pyx_INCREF(__pyx_t_1); __pyx_t_11++; if (unlikely(0 < 0)) __PYX_ERR(0, 47, __pyx_L1_error)
         #else
-        __pyx_t_1 = PySequence_ITEM(__pyx_t_7, __pyx_t_10); __pyx_t_10++; if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 47, __pyx_L1_error)
+        __pyx_t_1 = PySequence_ITEM(__pyx_t_7, __pyx_t_11); __pyx_t_11++; if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 47, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_1);
         #endif
       }
     } else {
-      __pyx_t_1 = __pyx_t_11(__pyx_t_7);
+      __pyx_t_1 = __pyx_t_12(__pyx_t_7);
       if (unlikely(!__pyx_t_1)) {
         PyObject* exc_type = PyErr_Occurred();
         if (exc_type) {
@@ -2253,45 +2327,45 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
       #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
       if (likely(PyTuple_CheckExact(sequence))) {
         __pyx_t_8 = PyTuple_GET_ITEM(sequence, 0); 
-        __pyx_t_5 = PyTuple_GET_ITEM(sequence, 1); 
+        __pyx_t_6 = PyTuple_GET_ITEM(sequence, 1); 
       } else {
         __pyx_t_8 = PyList_GET_ITEM(sequence, 0); 
-        __pyx_t_5 = PyList_GET_ITEM(sequence, 1); 
+        __pyx_t_6 = PyList_GET_ITEM(sequence, 1); 
       }
       __Pyx_INCREF(__pyx_t_8);
-      __Pyx_INCREF(__pyx_t_5);
+      __Pyx_INCREF(__pyx_t_6);
       #else
       __pyx_t_8 = PySequence_ITEM(sequence, 0); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 47, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_8);
-      __pyx_t_5 = PySequence_ITEM(sequence, 1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 47, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_5);
+      __pyx_t_6 = PySequence_ITEM(sequence, 1); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 47, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_6);
       #endif
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     } else {
       Py_ssize_t index = -1;
-      __pyx_t_6 = PyObject_GetIter(__pyx_t_1); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 47, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_6);
+      __pyx_t_10 = PyObject_GetIter(__pyx_t_1); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 47, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_10);
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-      __pyx_t_12 = Py_TYPE(__pyx_t_6)->tp_iternext;
-      index = 0; __pyx_t_8 = __pyx_t_12(__pyx_t_6); if (unlikely(!__pyx_t_8)) goto __pyx_L21_unpacking_failed;
+      __pyx_t_13 = Py_TYPE(__pyx_t_10)->tp_iternext;
+      index = 0; __pyx_t_8 = __pyx_t_13(__pyx_t_10); if (unlikely(!__pyx_t_8)) goto __pyx_L21_unpacking_failed;
       __Pyx_GOTREF(__pyx_t_8);
-      index = 1; __pyx_t_5 = __pyx_t_12(__pyx_t_6); if (unlikely(!__pyx_t_5)) goto __pyx_L21_unpacking_failed;
-      __Pyx_GOTREF(__pyx_t_5);
-      if (__Pyx_IternextUnpackEndCheck(__pyx_t_12(__pyx_t_6), 2) < 0) __PYX_ERR(0, 47, __pyx_L1_error)
-      __pyx_t_12 = NULL;
-      __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+      index = 1; __pyx_t_6 = __pyx_t_13(__pyx_t_10); if (unlikely(!__pyx_t_6)) goto __pyx_L21_unpacking_failed;
+      __Pyx_GOTREF(__pyx_t_6);
+      if (__Pyx_IternextUnpackEndCheck(__pyx_t_13(__pyx_t_10), 2) < 0) __PYX_ERR(0, 47, __pyx_L1_error)
+      __pyx_t_13 = NULL;
+      __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
       goto __pyx_L22_unpacking_done;
       __pyx_L21_unpacking_failed:;
-      __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-      __pyx_t_12 = NULL;
+      __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
+      __pyx_t_13 = NULL;
       if (__Pyx_IterFinish() == 0) __Pyx_RaiseNeedMoreValuesError(index);
       __PYX_ERR(0, 47, __pyx_L1_error)
       __pyx_L22_unpacking_done:;
     }
     __Pyx_XDECREF_SET(__pyx_v_p_id, __pyx_t_8);
     __pyx_t_8 = 0;
-    __Pyx_XDECREF_SET(__pyx_v_p_info, __pyx_t_5);
-    __pyx_t_5 = 0;
+    __Pyx_XDECREF_SET(__pyx_v_p_info, __pyx_t_6);
+    __pyx_t_6 = 0;
 
     /* "excel2json.pyx":48
  * 
@@ -2300,28 +2374,28 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
  *     for row in zip(*([key] + (value) for key, value in sorted(vdconverteddict.items()))):
  *         vsrow = vsrow + "\n" + str(row)
  */
-    __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_v_p_info, __pyx_n_s_values); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 48, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_5);
+    __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_v_p_info, __pyx_n_s_values); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 48, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_6);
     __pyx_t_8 = NULL;
-    if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_5))) {
-      __pyx_t_8 = PyMethod_GET_SELF(__pyx_t_5);
+    if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_6))) {
+      __pyx_t_8 = PyMethod_GET_SELF(__pyx_t_6);
       if (likely(__pyx_t_8)) {
-        PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_5);
+        PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_6);
         __Pyx_INCREF(__pyx_t_8);
         __Pyx_INCREF(function);
-        __Pyx_DECREF_SET(__pyx_t_5, function);
+        __Pyx_DECREF_SET(__pyx_t_6, function);
       }
     }
-    __pyx_t_1 = (__pyx_t_8) ? __Pyx_PyObject_CallOneArg(__pyx_t_5, __pyx_t_8) : __Pyx_PyObject_CallNoArg(__pyx_t_5);
+    __pyx_t_1 = (__pyx_t_8) ? __Pyx_PyObject_CallOneArg(__pyx_t_6, __pyx_t_8) : __Pyx_PyObject_CallNoArg(__pyx_t_6);
     __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
     if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 48, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-    __pyx_t_5 = PySequence_List(__pyx_t_1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 48, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_5);
+    __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+    __pyx_t_6 = PySequence_List(__pyx_t_1); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 48, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_6);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    if (unlikely(PyDict_SetItem(__pyx_cur_scope->__pyx_v_vdconverteddict, __pyx_v_p_id, __pyx_t_5) < 0)) __PYX_ERR(0, 48, __pyx_L1_error)
-    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+    if (unlikely(PyDict_SetItem(__pyx_cur_scope->__pyx_v_vdconverteddict, __pyx_v_p_id, __pyx_t_6) < 0)) __PYX_ERR(0, 48, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
 
     /* "excel2json.pyx":47
  *         exit()
@@ -2342,42 +2416,42 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
  */
   __pyx_t_7 = __pyx_pf_10excel2json_8ReadXLSX_genexpr(((PyObject*)__pyx_cur_scope)); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 49, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
-  __pyx_t_5 = __Pyx_PySequence_Tuple(__pyx_t_7); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 49, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_5);
+  __pyx_t_6 = __Pyx_PySequence_Tuple(__pyx_t_7); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 49, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_6);
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-  __pyx_t_7 = __Pyx_PyObject_Call(__pyx_builtin_zip, __pyx_t_5, NULL); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 49, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyObject_Call(__pyx_builtin_zip, __pyx_t_6, NULL); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 49, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
-  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+  __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
   if (likely(PyList_CheckExact(__pyx_t_7)) || PyTuple_CheckExact(__pyx_t_7)) {
-    __pyx_t_5 = __pyx_t_7; __Pyx_INCREF(__pyx_t_5); __pyx_t_10 = 0;
-    __pyx_t_11 = NULL;
+    __pyx_t_6 = __pyx_t_7; __Pyx_INCREF(__pyx_t_6); __pyx_t_11 = 0;
+    __pyx_t_12 = NULL;
   } else {
-    __pyx_t_10 = -1; __pyx_t_5 = PyObject_GetIter(__pyx_t_7); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 49, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_5);
-    __pyx_t_11 = Py_TYPE(__pyx_t_5)->tp_iternext; if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 49, __pyx_L1_error)
+    __pyx_t_11 = -1; __pyx_t_6 = PyObject_GetIter(__pyx_t_7); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 49, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_6);
+    __pyx_t_12 = Py_TYPE(__pyx_t_6)->tp_iternext; if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 49, __pyx_L1_error)
   }
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
   for (;;) {
-    if (likely(!__pyx_t_11)) {
-      if (likely(PyList_CheckExact(__pyx_t_5))) {
-        if (__pyx_t_10 >= PyList_GET_SIZE(__pyx_t_5)) break;
+    if (likely(!__pyx_t_12)) {
+      if (likely(PyList_CheckExact(__pyx_t_6))) {
+        if (__pyx_t_11 >= PyList_GET_SIZE(__pyx_t_6)) break;
         #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-        __pyx_t_7 = PyList_GET_ITEM(__pyx_t_5, __pyx_t_10); __Pyx_INCREF(__pyx_t_7); __pyx_t_10++; if (unlikely(0 < 0)) __PYX_ERR(0, 49, __pyx_L1_error)
+        __pyx_t_7 = PyList_GET_ITEM(__pyx_t_6, __pyx_t_11); __Pyx_INCREF(__pyx_t_7); __pyx_t_11++; if (unlikely(0 < 0)) __PYX_ERR(0, 49, __pyx_L1_error)
         #else
-        __pyx_t_7 = PySequence_ITEM(__pyx_t_5, __pyx_t_10); __pyx_t_10++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 49, __pyx_L1_error)
+        __pyx_t_7 = PySequence_ITEM(__pyx_t_6, __pyx_t_11); __pyx_t_11++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 49, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_7);
         #endif
       } else {
-        if (__pyx_t_10 >= PyTuple_GET_SIZE(__pyx_t_5)) break;
+        if (__pyx_t_11 >= PyTuple_GET_SIZE(__pyx_t_6)) break;
         #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-        __pyx_t_7 = PyTuple_GET_ITEM(__pyx_t_5, __pyx_t_10); __Pyx_INCREF(__pyx_t_7); __pyx_t_10++; if (unlikely(0 < 0)) __PYX_ERR(0, 49, __pyx_L1_error)
+        __pyx_t_7 = PyTuple_GET_ITEM(__pyx_t_6, __pyx_t_11); __Pyx_INCREF(__pyx_t_7); __pyx_t_11++; if (unlikely(0 < 0)) __PYX_ERR(0, 49, __pyx_L1_error)
         #else
-        __pyx_t_7 = PySequence_ITEM(__pyx_t_5, __pyx_t_10); __pyx_t_10++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 49, __pyx_L1_error)
+        __pyx_t_7 = PySequence_ITEM(__pyx_t_6, __pyx_t_11); __pyx_t_11++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 49, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_7);
         #endif
       }
     } else {
-      __pyx_t_7 = __pyx_t_11(__pyx_t_5);
+      __pyx_t_7 = __pyx_t_12(__pyx_t_6);
       if (unlikely(!__pyx_t_7)) {
         PyObject* exc_type = PyErr_Occurred();
         if (exc_type) {
@@ -2417,7 +2491,7 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
  *     try:
  */
   }
-  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+  __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
 
   /* "excel2json.pyx":51
  *     for row in zip(*([key] + (value) for key, value in sorted(vdconverteddict.items()))):
@@ -2455,12 +2529,12 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
           __Pyx_DECREF_SET(__pyx_t_8, function);
         }
       }
-      __pyx_t_5 = (__pyx_t_1) ? __Pyx_PyObject_Call2Args(__pyx_t_8, __pyx_t_1, __pyx_v_vsrow) : __Pyx_PyObject_CallOneArg(__pyx_t_8, __pyx_v_vsrow);
+      __pyx_t_6 = (__pyx_t_1) ? __Pyx_PyObject_Call2Args(__pyx_t_8, __pyx_t_1, __pyx_v_vsrow) : __Pyx_PyObject_CallOneArg(__pyx_t_8, __pyx_v_vsrow);
       __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
-      if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 52, __pyx_L25_error)
-      __Pyx_GOTREF(__pyx_t_5);
+      if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 52, __pyx_L25_error)
+      __Pyx_GOTREF(__pyx_t_6);
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-      __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+      __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
 
       /* "excel2json.pyx":53
  *     try:
@@ -2474,44 +2548,44 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
       __Pyx_GOTREF(__pyx_t_8);
       __Pyx_GetModuleGlobalName(__pyx_t_7, __pyx_n_s_json); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 53, __pyx_L25_error)
       __Pyx_GOTREF(__pyx_t_7);
-      __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_n_s_dumps); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 53, __pyx_L25_error)
-      __Pyx_GOTREF(__pyx_t_6);
+      __pyx_t_10 = __Pyx_PyObject_GetAttrStr(__pyx_t_7, __pyx_n_s_dumps); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 53, __pyx_L25_error)
+      __Pyx_GOTREF(__pyx_t_10);
       __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
       __pyx_t_7 = __Pyx_PyObject_CallOneArg(((PyObject *)(&PyString_Type)), __pyx_cur_scope->__pyx_v_vdconverteddict); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 53, __pyx_L25_error)
       __Pyx_GOTREF(__pyx_t_7);
-      __pyx_t_13 = NULL;
-      if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_6))) {
-        __pyx_t_13 = PyMethod_GET_SELF(__pyx_t_6);
-        if (likely(__pyx_t_13)) {
-          PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_6);
-          __Pyx_INCREF(__pyx_t_13);
+      __pyx_t_5 = NULL;
+      if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_10))) {
+        __pyx_t_5 = PyMethod_GET_SELF(__pyx_t_10);
+        if (likely(__pyx_t_5)) {
+          PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_10);
+          __Pyx_INCREF(__pyx_t_5);
           __Pyx_INCREF(function);
-          __Pyx_DECREF_SET(__pyx_t_6, function);
+          __Pyx_DECREF_SET(__pyx_t_10, function);
         }
       }
-      __pyx_t_1 = (__pyx_t_13) ? __Pyx_PyObject_Call2Args(__pyx_t_6, __pyx_t_13, __pyx_t_7) : __Pyx_PyObject_CallOneArg(__pyx_t_6, __pyx_t_7);
-      __Pyx_XDECREF(__pyx_t_13); __pyx_t_13 = 0;
+      __pyx_t_1 = (__pyx_t_5) ? __Pyx_PyObject_Call2Args(__pyx_t_10, __pyx_t_5, __pyx_t_7) : __Pyx_PyObject_CallOneArg(__pyx_t_10, __pyx_t_7);
+      __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
       __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
       if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 53, __pyx_L25_error)
       __Pyx_GOTREF(__pyx_t_1);
-      __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-      __pyx_t_6 = NULL;
+      __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
+      __pyx_t_10 = NULL;
       if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_8))) {
-        __pyx_t_6 = PyMethod_GET_SELF(__pyx_t_8);
-        if (likely(__pyx_t_6)) {
+        __pyx_t_10 = PyMethod_GET_SELF(__pyx_t_8);
+        if (likely(__pyx_t_10)) {
           PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_8);
-          __Pyx_INCREF(__pyx_t_6);
+          __Pyx_INCREF(__pyx_t_10);
           __Pyx_INCREF(function);
           __Pyx_DECREF_SET(__pyx_t_8, function);
         }
       }
-      __pyx_t_5 = (__pyx_t_6) ? __Pyx_PyObject_Call2Args(__pyx_t_8, __pyx_t_6, __pyx_t_1) : __Pyx_PyObject_CallOneArg(__pyx_t_8, __pyx_t_1);
-      __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
+      __pyx_t_6 = (__pyx_t_10) ? __Pyx_PyObject_Call2Args(__pyx_t_8, __pyx_t_10, __pyx_t_1) : __Pyx_PyObject_CallOneArg(__pyx_t_8, __pyx_t_1);
+      __Pyx_XDECREF(__pyx_t_10); __pyx_t_10 = 0;
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-      if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 53, __pyx_L25_error)
-      __Pyx_GOTREF(__pyx_t_5);
+      if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 53, __pyx_L25_error)
+      __Pyx_GOTREF(__pyx_t_6);
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-      __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+      __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
 
       /* "excel2json.pyx":51
  *     for row in zip(*([key] + (value) for key, value in sorted(vdconverteddict.items()))):
@@ -2527,7 +2601,7 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
     goto __pyx_L30_try_end;
     __pyx_L25_error:;
     __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __Pyx_XDECREF(__pyx_t_13); __pyx_t_13 = 0;
+    __Pyx_XDECREF(__pyx_t_10); __pyx_t_10 = 0;
     __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
     __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
@@ -2543,8 +2617,8 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
     __pyx_t_9 = __Pyx_PyErr_ExceptionMatches(((PyObject *)(&((PyTypeObject*)PyExc_Exception)[0])));
     if (__pyx_t_9) {
       __Pyx_AddTraceback("excel2json.ReadXLSX", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_5, &__pyx_t_8, &__pyx_t_1) < 0) __PYX_ERR(0, 54, __pyx_L27_except_error)
-      __Pyx_GOTREF(__pyx_t_5);
+      if (__Pyx_GetException(&__pyx_t_6, &__pyx_t_8, &__pyx_t_1) < 0) __PYX_ERR(0, 54, __pyx_L27_except_error)
+      __Pyx_GOTREF(__pyx_t_6);
       __Pyx_GOTREF(__pyx_t_8);
       __Pyx_GOTREF(__pyx_t_1);
       __Pyx_INCREF(__pyx_t_8);
@@ -2557,19 +2631,19 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
  *     try:
  *         fobj_txt.flush()
  */
-      __pyx_t_6 = __Pyx_PyObject_CallOneArg(((PyObject *)(&PyString_Type)), __pyx_v_e); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 55, __pyx_L27_except_error)
-      __Pyx_GOTREF(__pyx_t_6);
+      __pyx_t_10 = __Pyx_PyObject_CallOneArg(((PyObject *)(&PyString_Type)), __pyx_v_e); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 55, __pyx_L27_except_error)
+      __Pyx_GOTREF(__pyx_t_10);
       __pyx_t_7 = PyTuple_New(2); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 55, __pyx_L27_except_error)
       __Pyx_GOTREF(__pyx_t_7);
       __Pyx_INCREF(__pyx_kp_s_Error_Could_not_write_file);
       __Pyx_GIVEREF(__pyx_kp_s_Error_Could_not_write_file);
       PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_kp_s_Error_Could_not_write_file);
-      __Pyx_GIVEREF(__pyx_t_6);
-      PyTuple_SET_ITEM(__pyx_t_7, 1, __pyx_t_6);
-      __pyx_t_6 = 0;
+      __Pyx_GIVEREF(__pyx_t_10);
+      PyTuple_SET_ITEM(__pyx_t_7, 1, __pyx_t_10);
+      __pyx_t_10 = 0;
       if (__Pyx_PrintOne(0, __pyx_t_7) < 0) __PYX_ERR(0, 55, __pyx_L27_except_error)
       __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-      __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+      __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
       __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
       __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
       goto __pyx_L26_exception_handled;
@@ -2623,18 +2697,18 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
       if (unlikely(!__pyx_v_fobj_txt)) { __Pyx_RaiseUnboundLocalError("fobj_txt"); __PYX_ERR(0, 57, __pyx_L33_error) }
       __pyx_t_8 = __Pyx_PyObject_GetAttrStr(__pyx_v_fobj_txt, __pyx_n_s_flush); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 57, __pyx_L33_error)
       __Pyx_GOTREF(__pyx_t_8);
-      __pyx_t_5 = NULL;
+      __pyx_t_6 = NULL;
       if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_8))) {
-        __pyx_t_5 = PyMethod_GET_SELF(__pyx_t_8);
-        if (likely(__pyx_t_5)) {
+        __pyx_t_6 = PyMethod_GET_SELF(__pyx_t_8);
+        if (likely(__pyx_t_6)) {
           PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_8);
-          __Pyx_INCREF(__pyx_t_5);
+          __Pyx_INCREF(__pyx_t_6);
           __Pyx_INCREF(function);
           __Pyx_DECREF_SET(__pyx_t_8, function);
         }
       }
-      __pyx_t_1 = (__pyx_t_5) ? __Pyx_PyObject_CallOneArg(__pyx_t_8, __pyx_t_5) : __Pyx_PyObject_CallNoArg(__pyx_t_8);
-      __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+      __pyx_t_1 = (__pyx_t_6) ? __Pyx_PyObject_CallOneArg(__pyx_t_8, __pyx_t_6) : __Pyx_PyObject_CallNoArg(__pyx_t_8);
+      __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
       if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 57, __pyx_L33_error)
       __Pyx_GOTREF(__pyx_t_1);
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
@@ -2650,18 +2724,18 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
       if (unlikely(!__pyx_v_fobj_txt)) { __Pyx_RaiseUnboundLocalError("fobj_txt"); __PYX_ERR(0, 58, __pyx_L33_error) }
       __pyx_t_8 = __Pyx_PyObject_GetAttrStr(__pyx_v_fobj_txt, __pyx_n_s_close); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 58, __pyx_L33_error)
       __Pyx_GOTREF(__pyx_t_8);
-      __pyx_t_5 = NULL;
+      __pyx_t_6 = NULL;
       if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_8))) {
-        __pyx_t_5 = PyMethod_GET_SELF(__pyx_t_8);
-        if (likely(__pyx_t_5)) {
+        __pyx_t_6 = PyMethod_GET_SELF(__pyx_t_8);
+        if (likely(__pyx_t_6)) {
           PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_8);
-          __Pyx_INCREF(__pyx_t_5);
+          __Pyx_INCREF(__pyx_t_6);
           __Pyx_INCREF(function);
           __Pyx_DECREF_SET(__pyx_t_8, function);
         }
       }
-      __pyx_t_1 = (__pyx_t_5) ? __Pyx_PyObject_CallOneArg(__pyx_t_8, __pyx_t_5) : __Pyx_PyObject_CallNoArg(__pyx_t_8);
-      __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+      __pyx_t_1 = (__pyx_t_6) ? __Pyx_PyObject_CallOneArg(__pyx_t_8, __pyx_t_6) : __Pyx_PyObject_CallNoArg(__pyx_t_8);
+      __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
       if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 58, __pyx_L33_error)
       __Pyx_GOTREF(__pyx_t_1);
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
@@ -2681,7 +2755,7 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
     goto __pyx_L38_try_end;
     __pyx_L33_error:;
     __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __Pyx_XDECREF(__pyx_t_13); __pyx_t_13 = 0;
+    __Pyx_XDECREF(__pyx_t_10); __pyx_t_10 = 0;
     __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
     __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
@@ -2697,10 +2771,10 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
     __pyx_t_9 = __Pyx_PyErr_ExceptionMatches(((PyObject *)(&((PyTypeObject*)PyExc_Exception)[0])));
     if (__pyx_t_9) {
       __Pyx_AddTraceback("excel2json.ReadXLSX", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_1, &__pyx_t_8, &__pyx_t_5) < 0) __PYX_ERR(0, 59, __pyx_L35_except_error)
+      if (__Pyx_GetException(&__pyx_t_1, &__pyx_t_8, &__pyx_t_6) < 0) __PYX_ERR(0, 59, __pyx_L35_except_error)
       __Pyx_GOTREF(__pyx_t_1);
       __Pyx_GOTREF(__pyx_t_8);
-      __Pyx_GOTREF(__pyx_t_5);
+      __Pyx_GOTREF(__pyx_t_6);
       __Pyx_INCREF(__pyx_t_8);
       __Pyx_XDECREF_SET(__pyx_v_e, __pyx_t_8);
 
@@ -2713,16 +2787,16 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
  */
       __pyx_t_7 = __Pyx_PyObject_CallOneArg(((PyObject *)(&PyString_Type)), __pyx_v_e); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 60, __pyx_L35_except_error)
       __Pyx_GOTREF(__pyx_t_7);
-      __pyx_t_6 = PyTuple_New(2); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 60, __pyx_L35_except_error)
-      __Pyx_GOTREF(__pyx_t_6);
+      __pyx_t_10 = PyTuple_New(2); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 60, __pyx_L35_except_error)
+      __Pyx_GOTREF(__pyx_t_10);
       __Pyx_INCREF(__pyx_kp_s_Error_Could_not_flush_close_file);
       __Pyx_GIVEREF(__pyx_kp_s_Error_Could_not_flush_close_file);
-      PyTuple_SET_ITEM(__pyx_t_6, 0, __pyx_kp_s_Error_Could_not_flush_close_file);
+      PyTuple_SET_ITEM(__pyx_t_10, 0, __pyx_kp_s_Error_Could_not_flush_close_file);
       __Pyx_GIVEREF(__pyx_t_7);
-      PyTuple_SET_ITEM(__pyx_t_6, 1, __pyx_t_7);
+      PyTuple_SET_ITEM(__pyx_t_10, 1, __pyx_t_7);
       __pyx_t_7 = 0;
-      if (__Pyx_PrintOne(0, __pyx_t_6) < 0) __PYX_ERR(0, 60, __pyx_L35_except_error)
-      __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+      if (__Pyx_PrintOne(0, __pyx_t_10) < 0) __PYX_ERR(0, 60, __pyx_L35_except_error)
+      __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
 
       /* "excel2json.pyx":61
  *     except Exception as e:
@@ -2731,12 +2805,12 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
  *     try:
  *         fobj_json.flush()
  */
-      __pyx_t_6 = __Pyx_PyObject_CallNoArg(__pyx_builtin_exit); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 61, __pyx_L35_except_error)
-      __Pyx_GOTREF(__pyx_t_6);
-      __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+      __pyx_t_10 = __Pyx_PyObject_CallNoArg(__pyx_builtin_exit); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 61, __pyx_L35_except_error)
+      __Pyx_GOTREF(__pyx_t_10);
+      __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
       __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
       __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
-      __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+      __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
       goto __pyx_L34_exception_handled;
     }
     goto __pyx_L35_except_error;
@@ -2798,12 +2872,12 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
           __Pyx_DECREF_SET(__pyx_t_8, function);
         }
       }
-      __pyx_t_5 = (__pyx_t_1) ? __Pyx_PyObject_CallOneArg(__pyx_t_8, __pyx_t_1) : __Pyx_PyObject_CallNoArg(__pyx_t_8);
+      __pyx_t_6 = (__pyx_t_1) ? __Pyx_PyObject_CallOneArg(__pyx_t_8, __pyx_t_1) : __Pyx_PyObject_CallNoArg(__pyx_t_8);
       __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
-      if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 63, __pyx_L41_error)
-      __Pyx_GOTREF(__pyx_t_5);
+      if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 63, __pyx_L41_error)
+      __Pyx_GOTREF(__pyx_t_6);
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-      __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+      __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
 
       /* "excel2json.pyx":64
  *     try:
@@ -2825,12 +2899,12 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
           __Pyx_DECREF_SET(__pyx_t_8, function);
         }
       }
-      __pyx_t_5 = (__pyx_t_1) ? __Pyx_PyObject_CallOneArg(__pyx_t_8, __pyx_t_1) : __Pyx_PyObject_CallNoArg(__pyx_t_8);
+      __pyx_t_6 = (__pyx_t_1) ? __Pyx_PyObject_CallOneArg(__pyx_t_8, __pyx_t_1) : __Pyx_PyObject_CallNoArg(__pyx_t_8);
       __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
-      if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 64, __pyx_L41_error)
-      __Pyx_GOTREF(__pyx_t_5);
+      if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 64, __pyx_L41_error)
+      __Pyx_GOTREF(__pyx_t_6);
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-      __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+      __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
 
       /* "excel2json.pyx":62
  *         print("Error: Could not flush & close file! ", str(e))
@@ -2846,7 +2920,7 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
     goto __pyx_L46_try_end;
     __pyx_L41_error:;
     __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __Pyx_XDECREF(__pyx_t_13); __pyx_t_13 = 0;
+    __Pyx_XDECREF(__pyx_t_10); __pyx_t_10 = 0;
     __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
     __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
@@ -2862,8 +2936,8 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
     __pyx_t_9 = __Pyx_PyErr_ExceptionMatches(((PyObject *)(&((PyTypeObject*)PyExc_Exception)[0])));
     if (__pyx_t_9) {
       __Pyx_AddTraceback("excel2json.ReadXLSX", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_5, &__pyx_t_8, &__pyx_t_1) < 0) __PYX_ERR(0, 65, __pyx_L43_except_error)
-      __Pyx_GOTREF(__pyx_t_5);
+      if (__Pyx_GetException(&__pyx_t_6, &__pyx_t_8, &__pyx_t_1) < 0) __PYX_ERR(0, 65, __pyx_L43_except_error)
+      __Pyx_GOTREF(__pyx_t_6);
       __Pyx_GOTREF(__pyx_t_8);
       __Pyx_GOTREF(__pyx_t_1);
       __Pyx_INCREF(__pyx_t_8);
@@ -2876,16 +2950,16 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
  *         exit()
  * 
  */
-      __pyx_t_6 = __Pyx_PyObject_CallOneArg(((PyObject *)(&PyString_Type)), __pyx_v_e); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 66, __pyx_L43_except_error)
-      __Pyx_GOTREF(__pyx_t_6);
+      __pyx_t_10 = __Pyx_PyObject_CallOneArg(((PyObject *)(&PyString_Type)), __pyx_v_e); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 66, __pyx_L43_except_error)
+      __Pyx_GOTREF(__pyx_t_10);
       __pyx_t_7 = PyTuple_New(2); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 66, __pyx_L43_except_error)
       __Pyx_GOTREF(__pyx_t_7);
       __Pyx_INCREF(__pyx_kp_s_Error_Could_not_flush_close_file);
       __Pyx_GIVEREF(__pyx_kp_s_Error_Could_not_flush_close_file);
       PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_kp_s_Error_Could_not_flush_close_file);
-      __Pyx_GIVEREF(__pyx_t_6);
-      PyTuple_SET_ITEM(__pyx_t_7, 1, __pyx_t_6);
-      __pyx_t_6 = 0;
+      __Pyx_GIVEREF(__pyx_t_10);
+      PyTuple_SET_ITEM(__pyx_t_7, 1, __pyx_t_10);
+      __pyx_t_10 = 0;
       if (__Pyx_PrintOne(0, __pyx_t_7) < 0) __PYX_ERR(0, 66, __pyx_L43_except_error)
       __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
 
@@ -2899,7 +2973,7 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
       __pyx_t_7 = __Pyx_PyObject_CallNoArg(__pyx_builtin_exit); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 67, __pyx_L43_except_error)
       __Pyx_GOTREF(__pyx_t_7);
       __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-      __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+      __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
       __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
       __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
       goto __pyx_L42_exception_handled;
@@ -2937,27 +3011,27 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
   __Pyx_XDECREF(__pyx_r);
   __Pyx_GetModuleGlobalName(__pyx_t_8, __pyx_n_s_json); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 69, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
-  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_8, __pyx_n_s_dumps); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 69, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_5);
+  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_8, __pyx_n_s_dumps); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 69, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_6);
   __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
   __pyx_t_8 = __Pyx_PyObject_CallOneArg(((PyObject *)(&PyString_Type)), __pyx_cur_scope->__pyx_v_vdconverteddict); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 69, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   __pyx_t_7 = NULL;
-  if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_5))) {
-    __pyx_t_7 = PyMethod_GET_SELF(__pyx_t_5);
+  if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_6))) {
+    __pyx_t_7 = PyMethod_GET_SELF(__pyx_t_6);
     if (likely(__pyx_t_7)) {
-      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_5);
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_6);
       __Pyx_INCREF(__pyx_t_7);
       __Pyx_INCREF(function);
-      __Pyx_DECREF_SET(__pyx_t_5, function);
+      __Pyx_DECREF_SET(__pyx_t_6, function);
     }
   }
-  __pyx_t_1 = (__pyx_t_7) ? __Pyx_PyObject_Call2Args(__pyx_t_5, __pyx_t_7, __pyx_t_8) : __Pyx_PyObject_CallOneArg(__pyx_t_5, __pyx_t_8);
+  __pyx_t_1 = (__pyx_t_7) ? __Pyx_PyObject_Call2Args(__pyx_t_6, __pyx_t_7, __pyx_t_8) : __Pyx_PyObject_CallOneArg(__pyx_t_6, __pyx_t_8);
   __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
   __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
   if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 69, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+  __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
@@ -2977,7 +3051,7 @@ static PyObject *__pyx_f_10excel2json_ReadXLSX(PyObject *__pyx_v_filename, PyObj
   __Pyx_XDECREF(__pyx_t_6);
   __Pyx_XDECREF(__pyx_t_7);
   __Pyx_XDECREF(__pyx_t_8);
-  __Pyx_XDECREF(__pyx_t_13);
+  __Pyx_XDECREF(__pyx_t_10);
   __Pyx_AddTraceback("excel2json.ReadXLSX", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
@@ -3104,7 +3178,7 @@ static PyObject *__pyx_pf_10excel2json_convert2json(CYTHON_UNUSED PyObject *__py
  * def convert2json(filename, outputfiletxt, outputfilejson, sheetname):
  *     return ReadXLSX(filename, outputfiletxt, outputfilejson, sheetname)             # <<<<<<<<<<<<<<
  * 
- * if __name__ == '__main__':
+ * cdef filewalker(vspath, vssheetname):
  */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_1 = __pyx_f_10excel2json_ReadXLSX(__pyx_v_filename, __pyx_v_outputfiletxt, __pyx_v_outputfilejson, __pyx_v_sheetname); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 72, __pyx_L1_error)
@@ -3127,6 +3201,444 @@ static PyObject *__pyx_pf_10excel2json_convert2json(CYTHON_UNUSED PyObject *__py
   __Pyx_AddTraceback("excel2json.convert2json", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "excel2json.pyx":74
+ *     return ReadXLSX(filename, outputfiletxt, outputfilejson, sheetname)
+ * 
+ * cdef filewalker(vspath, vssheetname):             # <<<<<<<<<<<<<<
+ *     if (os.path.isdir(vspath) == True):
+ *         with os.scandir(vspath) as dirs:
+ */
+
+static PyObject *__pyx_f_10excel2json_filewalker(PyObject *__pyx_v_vspath, PyObject *__pyx_v_vssheetname) {
+  PyObject *__pyx_v_dirs = NULL;
+  PyObject *__pyx_v_entry = NULL;
+  PyObject *__pyx_v_vsfilepath = NULL;
+  PyObject *__pyx_v_vsjson = NULL;
+  PyObject *__pyx_v_vstxt = NULL;
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  int __pyx_t_4;
+  PyObject *__pyx_t_5 = NULL;
+  PyObject *__pyx_t_6 = NULL;
+  PyObject *__pyx_t_7 = NULL;
+  PyObject *__pyx_t_8 = NULL;
+  PyObject *__pyx_t_9 = NULL;
+  Py_ssize_t __pyx_t_10;
+  PyObject *(*__pyx_t_11)(PyObject *);
+  PyObject *__pyx_t_12 = NULL;
+  int __pyx_t_13;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("filewalker", 0);
+
+  /* "excel2json.pyx":75
+ * 
+ * cdef filewalker(vspath, vssheetname):
+ *     if (os.path.isdir(vspath) == True):             # <<<<<<<<<<<<<<
+ *         with os.scandir(vspath) as dirs:
+ *             for entry in dirs:
+ */
+  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_os); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 75, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_path); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 75, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_isdir); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 75, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  __pyx_t_3 = NULL;
+  if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
+    __pyx_t_3 = PyMethod_GET_SELF(__pyx_t_2);
+    if (likely(__pyx_t_3)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
+      __Pyx_INCREF(__pyx_t_3);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_2, function);
+    }
+  }
+  __pyx_t_1 = (__pyx_t_3) ? __Pyx_PyObject_Call2Args(__pyx_t_2, __pyx_t_3, __pyx_v_vspath) : __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_v_vspath);
+  __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 75, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_t_2 = PyObject_RichCompare(__pyx_t_1, Py_True, Py_EQ); __Pyx_XGOTREF(__pyx_t_2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 75, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_t_2); if (unlikely(__pyx_t_4 < 0)) __PYX_ERR(0, 75, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  if (__pyx_t_4) {
+
+    /* "excel2json.pyx":76
+ * cdef filewalker(vspath, vssheetname):
+ *     if (os.path.isdir(vspath) == True):
+ *         with os.scandir(vspath) as dirs:             # <<<<<<<<<<<<<<
+ *             for entry in dirs:
+ *                 if (entry.name[-4:] == "xlsx"):
+ */
+    /*with:*/ {
+      __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_os); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 76, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_1);
+      __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_scandir); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 76, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_3);
+      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+      __pyx_t_1 = NULL;
+      if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_3))) {
+        __pyx_t_1 = PyMethod_GET_SELF(__pyx_t_3);
+        if (likely(__pyx_t_1)) {
+          PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_3);
+          __Pyx_INCREF(__pyx_t_1);
+          __Pyx_INCREF(function);
+          __Pyx_DECREF_SET(__pyx_t_3, function);
+        }
+      }
+      __pyx_t_2 = (__pyx_t_1) ? __Pyx_PyObject_Call2Args(__pyx_t_3, __pyx_t_1, __pyx_v_vspath) : __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_v_vspath);
+      __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
+      if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 76, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+      __pyx_t_5 = __Pyx_PyObject_LookupSpecial(__pyx_t_2, __pyx_n_s_exit_2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 76, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_5);
+      __pyx_t_1 = __Pyx_PyObject_LookupSpecial(__pyx_t_2, __pyx_n_s_enter); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 76, __pyx_L4_error)
+      __Pyx_GOTREF(__pyx_t_1);
+      __pyx_t_6 = NULL;
+      if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_1))) {
+        __pyx_t_6 = PyMethod_GET_SELF(__pyx_t_1);
+        if (likely(__pyx_t_6)) {
+          PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_1);
+          __Pyx_INCREF(__pyx_t_6);
+          __Pyx_INCREF(function);
+          __Pyx_DECREF_SET(__pyx_t_1, function);
+        }
+      }
+      __pyx_t_3 = (__pyx_t_6) ? __Pyx_PyObject_CallOneArg(__pyx_t_1, __pyx_t_6) : __Pyx_PyObject_CallNoArg(__pyx_t_1);
+      __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
+      if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 76, __pyx_L4_error)
+      __Pyx_GOTREF(__pyx_t_3);
+      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+      __pyx_t_1 = __pyx_t_3;
+      __pyx_t_3 = 0;
+      __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+      /*try:*/ {
+        {
+          __Pyx_PyThreadState_declare
+          __Pyx_PyThreadState_assign
+          __Pyx_ExceptionSave(&__pyx_t_7, &__pyx_t_8, &__pyx_t_9);
+          __Pyx_XGOTREF(__pyx_t_7);
+          __Pyx_XGOTREF(__pyx_t_8);
+          __Pyx_XGOTREF(__pyx_t_9);
+          /*try:*/ {
+            __pyx_v_dirs = __pyx_t_1;
+            __pyx_t_1 = 0;
+
+            /* "excel2json.pyx":77
+ *     if (os.path.isdir(vspath) == True):
+ *         with os.scandir(vspath) as dirs:
+ *             for entry in dirs:             # <<<<<<<<<<<<<<
+ *                 if (entry.name[-4:] == "xlsx"):
+ *                     vsfilepath = vspath + entry.name
+ */
+            if (likely(PyList_CheckExact(__pyx_v_dirs)) || PyTuple_CheckExact(__pyx_v_dirs)) {
+              __pyx_t_1 = __pyx_v_dirs; __Pyx_INCREF(__pyx_t_1); __pyx_t_10 = 0;
+              __pyx_t_11 = NULL;
+            } else {
+              __pyx_t_10 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_v_dirs); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 77, __pyx_L8_error)
+              __Pyx_GOTREF(__pyx_t_1);
+              __pyx_t_11 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 77, __pyx_L8_error)
+            }
+            for (;;) {
+              if (likely(!__pyx_t_11)) {
+                if (likely(PyList_CheckExact(__pyx_t_1))) {
+                  if (__pyx_t_10 >= PyList_GET_SIZE(__pyx_t_1)) break;
+                  #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
+                  __pyx_t_2 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_10); __Pyx_INCREF(__pyx_t_2); __pyx_t_10++; if (unlikely(0 < 0)) __PYX_ERR(0, 77, __pyx_L8_error)
+                  #else
+                  __pyx_t_2 = PySequence_ITEM(__pyx_t_1, __pyx_t_10); __pyx_t_10++; if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 77, __pyx_L8_error)
+                  __Pyx_GOTREF(__pyx_t_2);
+                  #endif
+                } else {
+                  if (__pyx_t_10 >= PyTuple_GET_SIZE(__pyx_t_1)) break;
+                  #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
+                  __pyx_t_2 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_10); __Pyx_INCREF(__pyx_t_2); __pyx_t_10++; if (unlikely(0 < 0)) __PYX_ERR(0, 77, __pyx_L8_error)
+                  #else
+                  __pyx_t_2 = PySequence_ITEM(__pyx_t_1, __pyx_t_10); __pyx_t_10++; if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 77, __pyx_L8_error)
+                  __Pyx_GOTREF(__pyx_t_2);
+                  #endif
+                }
+              } else {
+                __pyx_t_2 = __pyx_t_11(__pyx_t_1);
+                if (unlikely(!__pyx_t_2)) {
+                  PyObject* exc_type = PyErr_Occurred();
+                  if (exc_type) {
+                    if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
+                    else __PYX_ERR(0, 77, __pyx_L8_error)
+                  }
+                  break;
+                }
+                __Pyx_GOTREF(__pyx_t_2);
+              }
+              __Pyx_XDECREF_SET(__pyx_v_entry, __pyx_t_2);
+              __pyx_t_2 = 0;
+
+              /* "excel2json.pyx":78
+ *         with os.scandir(vspath) as dirs:
+ *             for entry in dirs:
+ *                 if (entry.name[-4:] == "xlsx"):             # <<<<<<<<<<<<<<
+ *                     vsfilepath = vspath + entry.name
+ *                     vsjson = vspath + entry.name[:-5] + ".json"
+ */
+              __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_entry, __pyx_n_s_name); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 78, __pyx_L8_error)
+              __Pyx_GOTREF(__pyx_t_2);
+              __pyx_t_3 = __Pyx_PyObject_GetSlice(__pyx_t_2, -4L, 0, NULL, NULL, &__pyx_slice__3, 1, 0, 1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 78, __pyx_L8_error)
+              __Pyx_GOTREF(__pyx_t_3);
+              __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+              __pyx_t_4 = (__Pyx_PyString_Equals(__pyx_t_3, __pyx_n_s_xlsx, Py_EQ)); if (unlikely(__pyx_t_4 < 0)) __PYX_ERR(0, 78, __pyx_L8_error)
+              __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+              if (__pyx_t_4) {
+
+                /* "excel2json.pyx":79
+ *             for entry in dirs:
+ *                 if (entry.name[-4:] == "xlsx"):
+ *                     vsfilepath = vspath + entry.name             # <<<<<<<<<<<<<<
+ *                     vsjson = vspath + entry.name[:-5] + ".json"
+ *                     vstxt = vspath + entry.name[:-5] + ".txt"
+ */
+                __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_v_entry, __pyx_n_s_name); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 79, __pyx_L8_error)
+                __Pyx_GOTREF(__pyx_t_3);
+                __pyx_t_2 = PyNumber_Add(__pyx_v_vspath, __pyx_t_3); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 79, __pyx_L8_error)
+                __Pyx_GOTREF(__pyx_t_2);
+                __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+                __Pyx_XDECREF_SET(__pyx_v_vsfilepath, __pyx_t_2);
+                __pyx_t_2 = 0;
+
+                /* "excel2json.pyx":80
+ *                 if (entry.name[-4:] == "xlsx"):
+ *                     vsfilepath = vspath + entry.name
+ *                     vsjson = vspath + entry.name[:-5] + ".json"             # <<<<<<<<<<<<<<
+ *                     vstxt = vspath + entry.name[:-5] + ".txt"
+ *                     ReadXLSX(vsfilepath, vstxt, vsjson, vssheetname)
+ */
+                __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_entry, __pyx_n_s_name); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 80, __pyx_L8_error)
+                __Pyx_GOTREF(__pyx_t_2);
+                __pyx_t_3 = __Pyx_PyObject_GetSlice(__pyx_t_2, 0, -5L, NULL, NULL, &__pyx_slice__4, 0, 1, 1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 80, __pyx_L8_error)
+                __Pyx_GOTREF(__pyx_t_3);
+                __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+                __pyx_t_2 = PyNumber_Add(__pyx_v_vspath, __pyx_t_3); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 80, __pyx_L8_error)
+                __Pyx_GOTREF(__pyx_t_2);
+                __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+                __pyx_t_3 = PyNumber_Add(__pyx_t_2, __pyx_kp_s_json_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 80, __pyx_L8_error)
+                __Pyx_GOTREF(__pyx_t_3);
+                __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+                __Pyx_XDECREF_SET(__pyx_v_vsjson, __pyx_t_3);
+                __pyx_t_3 = 0;
+
+                /* "excel2json.pyx":81
+ *                     vsfilepath = vspath + entry.name
+ *                     vsjson = vspath + entry.name[:-5] + ".json"
+ *                     vstxt = vspath + entry.name[:-5] + ".txt"             # <<<<<<<<<<<<<<
+ *                     ReadXLSX(vsfilepath, vstxt, vsjson, vssheetname)
+ *                 else:
+ */
+                __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_v_entry, __pyx_n_s_name); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 81, __pyx_L8_error)
+                __Pyx_GOTREF(__pyx_t_3);
+                __pyx_t_2 = __Pyx_PyObject_GetSlice(__pyx_t_3, 0, -5L, NULL, NULL, &__pyx_slice__4, 0, 1, 1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 81, __pyx_L8_error)
+                __Pyx_GOTREF(__pyx_t_2);
+                __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+                __pyx_t_3 = PyNumber_Add(__pyx_v_vspath, __pyx_t_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 81, __pyx_L8_error)
+                __Pyx_GOTREF(__pyx_t_3);
+                __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+                __pyx_t_2 = PyNumber_Add(__pyx_t_3, __pyx_kp_s_txt); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 81, __pyx_L8_error)
+                __Pyx_GOTREF(__pyx_t_2);
+                __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+                __Pyx_XDECREF_SET(__pyx_v_vstxt, __pyx_t_2);
+                __pyx_t_2 = 0;
+
+                /* "excel2json.pyx":82
+ *                     vsjson = vspath + entry.name[:-5] + ".json"
+ *                     vstxt = vspath + entry.name[:-5] + ".txt"
+ *                     ReadXLSX(vsfilepath, vstxt, vsjson, vssheetname)             # <<<<<<<<<<<<<<
+ *                 else:
+ *                     print("INFO: Skipped " + entry.name + "; Not an XLSX File")
+ */
+                __pyx_t_2 = __pyx_f_10excel2json_ReadXLSX(__pyx_v_vsfilepath, __pyx_v_vstxt, __pyx_v_vsjson, __pyx_v_vssheetname); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 82, __pyx_L8_error)
+                __Pyx_GOTREF(__pyx_t_2);
+                __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+                /* "excel2json.pyx":78
+ *         with os.scandir(vspath) as dirs:
+ *             for entry in dirs:
+ *                 if (entry.name[-4:] == "xlsx"):             # <<<<<<<<<<<<<<
+ *                     vsfilepath = vspath + entry.name
+ *                     vsjson = vspath + entry.name[:-5] + ".json"
+ */
+                goto __pyx_L16;
+              }
+
+              /* "excel2json.pyx":84
+ *                     ReadXLSX(vsfilepath, vstxt, vsjson, vssheetname)
+ *                 else:
+ *                     print("INFO: Skipped " + entry.name + "; Not an XLSX File")             # <<<<<<<<<<<<<<
+ *     else:
+ *         printf("Error: path does not exist")
+ */
+              /*else*/ {
+                __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_entry, __pyx_n_s_name); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 84, __pyx_L8_error)
+                __Pyx_GOTREF(__pyx_t_2);
+                __pyx_t_3 = PyNumber_Add(__pyx_kp_s_INFO_Skipped, __pyx_t_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 84, __pyx_L8_error)
+                __Pyx_GOTREF(__pyx_t_3);
+                __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+                __pyx_t_2 = PyNumber_Add(__pyx_t_3, __pyx_kp_s_Not_an_XLSX_File); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 84, __pyx_L8_error)
+                __Pyx_GOTREF(__pyx_t_2);
+                __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+                if (__Pyx_PrintOne(0, __pyx_t_2) < 0) __PYX_ERR(0, 84, __pyx_L8_error)
+                __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+              }
+              __pyx_L16:;
+
+              /* "excel2json.pyx":77
+ *     if (os.path.isdir(vspath) == True):
+ *         with os.scandir(vspath) as dirs:
+ *             for entry in dirs:             # <<<<<<<<<<<<<<
+ *                 if (entry.name[-4:] == "xlsx"):
+ *                     vsfilepath = vspath + entry.name
+ */
+            }
+            __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+
+            /* "excel2json.pyx":76
+ * cdef filewalker(vspath, vssheetname):
+ *     if (os.path.isdir(vspath) == True):
+ *         with os.scandir(vspath) as dirs:             # <<<<<<<<<<<<<<
+ *             for entry in dirs:
+ *                 if (entry.name[-4:] == "xlsx"):
+ */
+          }
+          __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+          __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+          __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+          goto __pyx_L13_try_end;
+          __pyx_L8_error:;
+          __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
+          __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+          __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+          __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
+          /*except:*/ {
+            __Pyx_AddTraceback("excel2json.filewalker", __pyx_clineno, __pyx_lineno, __pyx_filename);
+            if (__Pyx_GetException(&__pyx_t_1, &__pyx_t_2, &__pyx_t_3) < 0) __PYX_ERR(0, 76, __pyx_L10_except_error)
+            __Pyx_GOTREF(__pyx_t_1);
+            __Pyx_GOTREF(__pyx_t_2);
+            __Pyx_GOTREF(__pyx_t_3);
+            __pyx_t_6 = PyTuple_Pack(3, __pyx_t_1, __pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 76, __pyx_L10_except_error)
+            __Pyx_GOTREF(__pyx_t_6);
+            __pyx_t_12 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_6, NULL);
+            __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+            __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+            if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 76, __pyx_L10_except_error)
+            __Pyx_GOTREF(__pyx_t_12);
+            __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_t_12);
+            __Pyx_DECREF(__pyx_t_12); __pyx_t_12 = 0;
+            if (__pyx_t_4 < 0) __PYX_ERR(0, 76, __pyx_L10_except_error)
+            __pyx_t_13 = ((!(__pyx_t_4 != 0)) != 0);
+            if (__pyx_t_13) {
+              __Pyx_GIVEREF(__pyx_t_1);
+              __Pyx_GIVEREF(__pyx_t_2);
+              __Pyx_XGIVEREF(__pyx_t_3);
+              __Pyx_ErrRestoreWithState(__pyx_t_1, __pyx_t_2, __pyx_t_3);
+              __pyx_t_1 = 0; __pyx_t_2 = 0; __pyx_t_3 = 0; 
+              __PYX_ERR(0, 76, __pyx_L10_except_error)
+            }
+            __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
+            __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+            __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+            goto __pyx_L9_exception_handled;
+          }
+          __pyx_L10_except_error:;
+          __Pyx_XGIVEREF(__pyx_t_7);
+          __Pyx_XGIVEREF(__pyx_t_8);
+          __Pyx_XGIVEREF(__pyx_t_9);
+          __Pyx_ExceptionReset(__pyx_t_7, __pyx_t_8, __pyx_t_9);
+          goto __pyx_L1_error;
+          __pyx_L9_exception_handled:;
+          __Pyx_XGIVEREF(__pyx_t_7);
+          __Pyx_XGIVEREF(__pyx_t_8);
+          __Pyx_XGIVEREF(__pyx_t_9);
+          __Pyx_ExceptionReset(__pyx_t_7, __pyx_t_8, __pyx_t_9);
+          __pyx_L13_try_end:;
+        }
+      }
+      /*finally:*/ {
+        /*normal exit:*/{
+          if (__pyx_t_5) {
+            __pyx_t_9 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_tuple__5, NULL);
+            __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+            if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 76, __pyx_L1_error)
+            __Pyx_GOTREF(__pyx_t_9);
+            __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+          }
+          goto __pyx_L7;
+        }
+        __pyx_L7:;
+      }
+      goto __pyx_L20;
+      __pyx_L4_error:;
+      __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+      goto __pyx_L1_error;
+      __pyx_L20:;
+    }
+
+    /* "excel2json.pyx":75
+ * 
+ * cdef filewalker(vspath, vssheetname):
+ *     if (os.path.isdir(vspath) == True):             # <<<<<<<<<<<<<<
+ *         with os.scandir(vspath) as dirs:
+ *             for entry in dirs:
+ */
+    goto __pyx_L3;
+  }
+
+  /* "excel2json.pyx":86
+ *                     print("INFO: Skipped " + entry.name + "; Not an XLSX File")
+ *     else:
+ *         printf("Error: path does not exist")             # <<<<<<<<<<<<<<
+ * if __name__ == '__main__':
+ *     WelcomeMessage()
+ */
+  /*else*/ {
+    (void)(printf(((char const *)"Error: path does not exist")));
+  }
+  __pyx_L3:;
+
+  /* "excel2json.pyx":74
+ *     return ReadXLSX(filename, outputfiletxt, outputfilejson, sheetname)
+ * 
+ * cdef filewalker(vspath, vssheetname):             # <<<<<<<<<<<<<<
+ *     if (os.path.isdir(vspath) == True):
+ *         with os.scandir(vspath) as dirs:
+ */
+
+  /* function exit code */
+  __pyx_r = Py_None; __Pyx_INCREF(Py_None);
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_3);
+  __Pyx_XDECREF(__pyx_t_6);
+  __Pyx_AddTraceback("excel2json.filewalker", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = 0;
+  __pyx_L0:;
+  __Pyx_XDECREF(__pyx_v_dirs);
+  __Pyx_XDECREF(__pyx_v_entry);
+  __Pyx_XDECREF(__pyx_v_vsfilepath);
+  __Pyx_XDECREF(__pyx_v_vsjson);
+  __Pyx_XDECREF(__pyx_v_vstxt);
   __Pyx_XGIVEREF(__pyx_r);
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
@@ -3418,19 +3930,27 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_kp_s_Error_Could_not_open_output_file, __pyx_k_Error_Could_not_open_output_file, sizeof(__pyx_k_Error_Could_not_open_output_file), 0, 0, 1, 0},
   {&__pyx_kp_s_Error_Could_not_write_file, __pyx_k_Error_Could_not_write_file, sizeof(__pyx_k_Error_Could_not_write_file), 0, 0, 1, 0},
   {&__pyx_kp_s_File_read, __pyx_k_File_read, sizeof(__pyx_k_File_read), 0, 0, 1, 0},
+  {&__pyx_kp_s_INFO_Skipped, __pyx_k_INFO_Skipped, sizeof(__pyx_k_INFO_Skipped), 0, 0, 1, 0},
+  {&__pyx_kp_s_Not_an_XLSX_File, __pyx_k_Not_an_XLSX_File, sizeof(__pyx_k_Not_an_XLSX_File), 0, 0, 1, 0},
   {&__pyx_n_s_ReadXLSX_locals_genexpr, __pyx_k_ReadXLSX_locals_genexpr, sizeof(__pyx_k_ReadXLSX_locals_genexpr), 0, 0, 1, 1},
+  {&__pyx_kp_s_Running_in_Batch_mode_on_path, __pyx_k_Running_in_Batch_mode_on_path, sizeof(__pyx_k_Running_in_Batch_mode_on_path), 0, 0, 1, 0},
   {&__pyx_kp_s__2, __pyx_k__2, sizeof(__pyx_k__2), 0, 0, 1, 0},
   {&__pyx_n_s_add_argument, __pyx_k_add_argument, sizeof(__pyx_k_add_argument), 0, 0, 1, 1},
   {&__pyx_n_s_argparse, __pyx_k_argparse, sizeof(__pyx_k_argparse), 0, 0, 1, 1},
   {&__pyx_n_s_args, __pyx_k_args, sizeof(__pyx_k_args), 0, 0, 1, 1},
+  {&__pyx_kp_s_batchpath, __pyx_k_batchpath, sizeof(__pyx_k_batchpath), 0, 0, 1, 0},
+  {&__pyx_n_s_batchpath_2, __pyx_k_batchpath_2, sizeof(__pyx_k_batchpath_2), 0, 0, 1, 1},
+  {&__pyx_kp_s_bp, __pyx_k_bp, sizeof(__pyx_k_bp), 0, 0, 1, 0},
   {&__pyx_n_s_cline_in_traceback, __pyx_k_cline_in_traceback, sizeof(__pyx_k_cline_in_traceback), 0, 0, 1, 1},
   {&__pyx_n_s_close, __pyx_k_close, sizeof(__pyx_k_close), 0, 0, 1, 1},
   {&__pyx_n_s_convert2json, __pyx_k_convert2json, sizeof(__pyx_k_convert2json), 0, 0, 1, 1},
   {&__pyx_n_s_dumps, __pyx_k_dumps, sizeof(__pyx_k_dumps), 0, 0, 1, 1},
   {&__pyx_n_s_end, __pyx_k_end, sizeof(__pyx_k_end), 0, 0, 1, 1},
   {&__pyx_n_s_engine, __pyx_k_engine, sizeof(__pyx_k_engine), 0, 0, 1, 1},
+  {&__pyx_n_s_enter, __pyx_k_enter, sizeof(__pyx_k_enter), 0, 0, 1, 1},
   {&__pyx_n_s_excel2json, __pyx_k_excel2json, sizeof(__pyx_k_excel2json), 0, 0, 1, 1},
   {&__pyx_n_s_exit, __pyx_k_exit, sizeof(__pyx_k_exit), 0, 0, 1, 1},
+  {&__pyx_n_s_exit_2, __pyx_k_exit_2, sizeof(__pyx_k_exit_2), 0, 0, 1, 1},
   {&__pyx_n_s_file, __pyx_k_file, sizeof(__pyx_k_file), 0, 0, 1, 1},
   {&__pyx_n_s_filename, __pyx_k_filename, sizeof(__pyx_k_filename), 0, 0, 1, 1},
   {&__pyx_n_s_flush, __pyx_k_flush, sizeof(__pyx_k_flush), 0, 0, 1, 1},
@@ -3440,10 +3960,13 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_index_col, __pyx_k_index_col, sizeof(__pyx_k_index_col), 0, 0, 1, 1},
   {&__pyx_kp_s_input, __pyx_k_input, sizeof(__pyx_k_input), 0, 0, 1, 0},
   {&__pyx_n_s_input_2, __pyx_k_input_2, sizeof(__pyx_k_input_2), 0, 0, 1, 1},
+  {&__pyx_n_s_isdir, __pyx_k_isdir, sizeof(__pyx_k_isdir), 0, 0, 1, 1},
   {&__pyx_n_s_items, __pyx_k_items, sizeof(__pyx_k_items), 0, 0, 1, 1},
   {&__pyx_n_s_json, __pyx_k_json, sizeof(__pyx_k_json), 0, 0, 1, 1},
+  {&__pyx_kp_s_json_2, __pyx_k_json_2, sizeof(__pyx_k_json_2), 0, 0, 1, 0},
   {&__pyx_n_s_main, __pyx_k_main, sizeof(__pyx_k_main), 0, 0, 1, 1},
   {&__pyx_n_s_name, __pyx_k_name, sizeof(__pyx_k_name), 0, 0, 1, 1},
+  {&__pyx_n_s_name_2, __pyx_k_name_2, sizeof(__pyx_k_name_2), 0, 0, 1, 1},
   {&__pyx_kp_s_oj, __pyx_k_oj, sizeof(__pyx_k_oj), 0, 0, 1, 0},
   {&__pyx_n_s_open, __pyx_k_open, sizeof(__pyx_k_open), 0, 0, 1, 1},
   {&__pyx_n_s_openpyxl, __pyx_k_openpyxl, sizeof(__pyx_k_openpyxl), 0, 0, 1, 1},
@@ -3457,10 +3980,11 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_outputtxt_2, __pyx_k_outputtxt_2, sizeof(__pyx_k_outputtxt_2), 0, 0, 1, 1},
   {&__pyx_n_s_pandas, __pyx_k_pandas, sizeof(__pyx_k_pandas), 0, 0, 1, 1},
   {&__pyx_n_s_parse_args, __pyx_k_parse_args, sizeof(__pyx_k_parse_args), 0, 0, 1, 1},
+  {&__pyx_n_s_path, __pyx_k_path, sizeof(__pyx_k_path), 0, 0, 1, 1},
   {&__pyx_n_s_pd, __pyx_k_pd, sizeof(__pyx_k_pd), 0, 0, 1, 1},
   {&__pyx_n_s_print, __pyx_k_print, sizeof(__pyx_k_print), 0, 0, 1, 1},
   {&__pyx_n_s_read_excel, __pyx_k_read_excel, sizeof(__pyx_k_read_excel), 0, 0, 1, 1},
-  {&__pyx_n_s_required, __pyx_k_required, sizeof(__pyx_k_required), 0, 0, 1, 1},
+  {&__pyx_n_s_scandir, __pyx_k_scandir, sizeof(__pyx_k_scandir), 0, 0, 1, 1},
   {&__pyx_n_s_send, __pyx_k_send, sizeof(__pyx_k_send), 0, 0, 1, 1},
   {&__pyx_n_s_sheet_name, __pyx_k_sheet_name, sizeof(__pyx_k_sheet_name), 0, 0, 1, 1},
   {&__pyx_n_s_sheetname, __pyx_k_sheetname, sizeof(__pyx_k_sheetname), 0, 0, 1, 1},
@@ -3471,11 +3995,15 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_test, __pyx_k_test, sizeof(__pyx_k_test), 0, 0, 1, 1},
   {&__pyx_n_s_throw, __pyx_k_throw, sizeof(__pyx_k_throw), 0, 0, 1, 1},
   {&__pyx_n_s_to_dict, __pyx_k_to_dict, sizeof(__pyx_k_to_dict), 0, 0, 1, 1},
+  {&__pyx_kp_s_txt, __pyx_k_txt, sizeof(__pyx_k_txt), 0, 0, 1, 0},
   {&__pyx_n_s_type, __pyx_k_type, sizeof(__pyx_k_type), 0, 0, 1, 1},
+  {&__pyx_kp_s_using_first_sheet, __pyx_k_using_first_sheet, sizeof(__pyx_k_using_first_sheet), 0, 0, 1, 0},
+  {&__pyx_kp_s_using_sheet, __pyx_k_using_sheet, sizeof(__pyx_k_using_sheet), 0, 0, 1, 0},
   {&__pyx_n_s_values, __pyx_k_values, sizeof(__pyx_k_values), 0, 0, 1, 1},
   {&__pyx_n_s_vapparser, __pyx_k_vapparser, sizeof(__pyx_k_vapparser), 0, 0, 1, 1},
   {&__pyx_n_s_w, __pyx_k_w, sizeof(__pyx_k_w), 0, 0, 1, 1},
   {&__pyx_n_s_write, __pyx_k_write, sizeof(__pyx_k_write), 0, 0, 1, 1},
+  {&__pyx_n_s_xlsx, __pyx_k_xlsx, sizeof(__pyx_k_xlsx), 0, 0, 1, 1},
   {&__pyx_n_s_zip, __pyx_k_zip, sizeof(__pyx_k_zip), 0, 0, 1, 1},
   {0, 0, 0, 0, 0, 0, 0}
 };
@@ -3492,6 +4020,39 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__Pyx_InitCachedConstants", 0);
 
+  /* "excel2json.pyx":78
+ *         with os.scandir(vspath) as dirs:
+ *             for entry in dirs:
+ *                 if (entry.name[-4:] == "xlsx"):             # <<<<<<<<<<<<<<
+ *                     vsfilepath = vspath + entry.name
+ *                     vsjson = vspath + entry.name[:-5] + ".json"
+ */
+  __pyx_slice__3 = PySlice_New(__pyx_int_neg_4, Py_None, Py_None); if (unlikely(!__pyx_slice__3)) __PYX_ERR(0, 78, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_slice__3);
+  __Pyx_GIVEREF(__pyx_slice__3);
+
+  /* "excel2json.pyx":80
+ *                 if (entry.name[-4:] == "xlsx"):
+ *                     vsfilepath = vspath + entry.name
+ *                     vsjson = vspath + entry.name[:-5] + ".json"             # <<<<<<<<<<<<<<
+ *                     vstxt = vspath + entry.name[:-5] + ".txt"
+ *                     ReadXLSX(vsfilepath, vstxt, vsjson, vssheetname)
+ */
+  __pyx_slice__4 = PySlice_New(Py_None, __pyx_int_neg_5, Py_None); if (unlikely(!__pyx_slice__4)) __PYX_ERR(0, 80, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_slice__4);
+  __Pyx_GIVEREF(__pyx_slice__4);
+
+  /* "excel2json.pyx":76
+ * cdef filewalker(vspath, vssheetname):
+ *     if (os.path.isdir(vspath) == True):
+ *         with os.scandir(vspath) as dirs:             # <<<<<<<<<<<<<<
+ *             for entry in dirs:
+ *                 if (entry.name[-4:] == "xlsx"):
+ */
+  __pyx_tuple__5 = PyTuple_Pack(3, Py_None, Py_None, Py_None); if (unlikely(!__pyx_tuple__5)) __PYX_ERR(0, 76, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__5);
+  __Pyx_GIVEREF(__pyx_tuple__5);
+
   /* "excel2json.pyx":71
  *     return json.dumps(str(vdconverteddict))
  * 
@@ -3499,54 +4060,65 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  *     return ReadXLSX(filename, outputfiletxt, outputfilejson, sheetname)
  * 
  */
-  __pyx_tuple__3 = PyTuple_Pack(4, __pyx_n_s_filename, __pyx_n_s_outputfiletxt, __pyx_n_s_outputfilejson, __pyx_n_s_sheetname); if (unlikely(!__pyx_tuple__3)) __PYX_ERR(0, 71, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__3);
-  __Pyx_GIVEREF(__pyx_tuple__3);
-  __pyx_codeobj__4 = (PyObject*)__Pyx_PyCode_New(4, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__3, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_excel2json_pyx, __pyx_n_s_convert2json, 71, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__4)) __PYX_ERR(0, 71, __pyx_L1_error)
-
-  /* "excel2json.pyx":78
- *     # Defining Arguments
- *     vapparser = ArgumentParser()
- *     vapparser.add_argument("--input", "-i", type=str, required=True)             # <<<<<<<<<<<<<<
- *     vapparser.add_argument("--outputjson", "-oj", type=str, required=True)
- *     vapparser.add_argument("--outputtxt", "-ot", type= str, required=True)
- */
-  __pyx_tuple__5 = PyTuple_Pack(2, __pyx_kp_s_input, __pyx_kp_s_i); if (unlikely(!__pyx_tuple__5)) __PYX_ERR(0, 78, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__5);
-  __Pyx_GIVEREF(__pyx_tuple__5);
-
-  /* "excel2json.pyx":79
- *     vapparser = ArgumentParser()
- *     vapparser.add_argument("--input", "-i", type=str, required=True)
- *     vapparser.add_argument("--outputjson", "-oj", type=str, required=True)             # <<<<<<<<<<<<<<
- *     vapparser.add_argument("--outputtxt", "-ot", type= str, required=True)
- *     vapparser.add_argument("--sheetname", "-sn", type= str, required=True)
- */
-  __pyx_tuple__6 = PyTuple_Pack(2, __pyx_kp_s_outputjson, __pyx_kp_s_oj); if (unlikely(!__pyx_tuple__6)) __PYX_ERR(0, 79, __pyx_L1_error)
+  __pyx_tuple__6 = PyTuple_Pack(4, __pyx_n_s_filename, __pyx_n_s_outputfiletxt, __pyx_n_s_outputfilejson, __pyx_n_s_sheetname); if (unlikely(!__pyx_tuple__6)) __PYX_ERR(0, 71, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__6);
   __Pyx_GIVEREF(__pyx_tuple__6);
+  __pyx_codeobj__7 = (PyObject*)__Pyx_PyCode_New(4, 0, 4, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__6, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_excel2json_pyx, __pyx_n_s_convert2json, 71, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__7)) __PYX_ERR(0, 71, __pyx_L1_error)
 
-  /* "excel2json.pyx":80
- *     vapparser.add_argument("--input", "-i", type=str, required=True)
- *     vapparser.add_argument("--outputjson", "-oj", type=str, required=True)
- *     vapparser.add_argument("--outputtxt", "-ot", type= str, required=True)             # <<<<<<<<<<<<<<
- *     vapparser.add_argument("--sheetname", "-sn", type= str, required=True)
- *     args = vapparser.parse_args()
+  /* "excel2json.pyx":91
+ *     # Defining Arguments
+ *     vapparser = ArgumentParser()
+ *     vapparser.add_argument("--input", "-i", type=str)             # <<<<<<<<<<<<<<
+ *     vapparser.add_argument("--outputjson", "-oj", type = str)
+ *     vapparser.add_argument("--outputtxt", "-ot", type = str)
  */
-  __pyx_tuple__7 = PyTuple_Pack(2, __pyx_kp_s_outputtxt, __pyx_kp_s_ot); if (unlikely(!__pyx_tuple__7)) __PYX_ERR(0, 80, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__7);
-  __Pyx_GIVEREF(__pyx_tuple__7);
-
-  /* "excel2json.pyx":81
- *     vapparser.add_argument("--outputjson", "-oj", type=str, required=True)
- *     vapparser.add_argument("--outputtxt", "-ot", type= str, required=True)
- *     vapparser.add_argument("--sheetname", "-sn", type= str, required=True)             # <<<<<<<<<<<<<<
- *     args = vapparser.parse_args()
- *     ReadXLSX(args.input, args.outputtxt, args.outputjson, args.sheetname)
- */
-  __pyx_tuple__8 = PyTuple_Pack(2, __pyx_kp_s_sheetname_2, __pyx_kp_s_sn); if (unlikely(!__pyx_tuple__8)) __PYX_ERR(0, 81, __pyx_L1_error)
+  __pyx_tuple__8 = PyTuple_Pack(2, __pyx_kp_s_input, __pyx_kp_s_i); if (unlikely(!__pyx_tuple__8)) __PYX_ERR(0, 91, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__8);
   __Pyx_GIVEREF(__pyx_tuple__8);
+
+  /* "excel2json.pyx":92
+ *     vapparser = ArgumentParser()
+ *     vapparser.add_argument("--input", "-i", type=str)
+ *     vapparser.add_argument("--outputjson", "-oj", type = str)             # <<<<<<<<<<<<<<
+ *     vapparser.add_argument("--outputtxt", "-ot", type = str)
+ *     vapparser.add_argument("--sheetname", "-sn", type = str)
+ */
+  __pyx_tuple__9 = PyTuple_Pack(2, __pyx_kp_s_outputjson, __pyx_kp_s_oj); if (unlikely(!__pyx_tuple__9)) __PYX_ERR(0, 92, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__9);
+  __Pyx_GIVEREF(__pyx_tuple__9);
+
+  /* "excel2json.pyx":93
+ *     vapparser.add_argument("--input", "-i", type=str)
+ *     vapparser.add_argument("--outputjson", "-oj", type = str)
+ *     vapparser.add_argument("--outputtxt", "-ot", type = str)             # <<<<<<<<<<<<<<
+ *     vapparser.add_argument("--sheetname", "-sn", type = str)
+ *     vapparser.add_argument("--batchpath", "-bp", type = str)
+ */
+  __pyx_tuple__10 = PyTuple_Pack(2, __pyx_kp_s_outputtxt, __pyx_kp_s_ot); if (unlikely(!__pyx_tuple__10)) __PYX_ERR(0, 93, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__10);
+  __Pyx_GIVEREF(__pyx_tuple__10);
+
+  /* "excel2json.pyx":94
+ *     vapparser.add_argument("--outputjson", "-oj", type = str)
+ *     vapparser.add_argument("--outputtxt", "-ot", type = str)
+ *     vapparser.add_argument("--sheetname", "-sn", type = str)             # <<<<<<<<<<<<<<
+ *     vapparser.add_argument("--batchpath", "-bp", type = str)
+ *     args = vapparser.parse_args()
+ */
+  __pyx_tuple__11 = PyTuple_Pack(2, __pyx_kp_s_sheetname_2, __pyx_kp_s_sn); if (unlikely(!__pyx_tuple__11)) __PYX_ERR(0, 94, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__11);
+  __Pyx_GIVEREF(__pyx_tuple__11);
+
+  /* "excel2json.pyx":95
+ *     vapparser.add_argument("--outputtxt", "-ot", type = str)
+ *     vapparser.add_argument("--sheetname", "-sn", type = str)
+ *     vapparser.add_argument("--batchpath", "-bp", type = str)             # <<<<<<<<<<<<<<
+ *     args = vapparser.parse_args()
+ * 
+ */
+  __pyx_tuple__12 = PyTuple_Pack(2, __pyx_kp_s_batchpath, __pyx_kp_s_bp); if (unlikely(!__pyx_tuple__12)) __PYX_ERR(0, 95, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__12);
+  __Pyx_GIVEREF(__pyx_tuple__12);
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -3558,6 +4130,8 @@ static CYTHON_SMALL_CODE int __Pyx_InitGlobals(void) {
   __pyx_umethod_PyDict_Type_items.type = (PyObject*)&PyDict_Type;
   if (__Pyx_InitStrings(__pyx_string_tab) < 0) __PYX_ERR(0, 1, __pyx_L1_error);
   __pyx_int_0 = PyInt_FromLong(0); if (unlikely(!__pyx_int_0)) __PYX_ERR(0, 1, __pyx_L1_error)
+  __pyx_int_neg_4 = PyInt_FromLong(-4); if (unlikely(!__pyx_int_neg_4)) __PYX_ERR(0, 1, __pyx_L1_error)
+  __pyx_int_neg_5 = PyInt_FromLong(-5); if (unlikely(!__pyx_int_neg_5)) __PYX_ERR(0, 1, __pyx_L1_error)
   return 0;
   __pyx_L1_error:;
   return -1;
@@ -3747,8 +4321,10 @@ static CYTHON_SMALL_CODE int __pyx_pymod_exec_excel2json(PyObject *__pyx_pyinit_
   PyObject *__pyx_t_2 = NULL;
   int __pyx_t_3;
   PyObject *__pyx_t_4 = NULL;
-  PyObject *__pyx_t_5 = NULL;
-  PyObject *__pyx_t_6 = NULL;
+  int __pyx_t_5;
+  int __pyx_t_6;
+  PyObject *__pyx_t_7 = NULL;
+  PyObject *__pyx_t_8 = NULL;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
@@ -3829,7 +4405,7 @@ if (!__Pyx_RefNanny) {
   if (__Pyx_init_sys_getdefaultencoding_params() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   #endif
   if (__pyx_module_is_main_excel2json) {
-    if (PyObject_SetAttr(__pyx_m, __pyx_n_s_name, __pyx_n_s_main) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+    if (PyObject_SetAttr(__pyx_m, __pyx_n_s_name_2, __pyx_n_s_main) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   }
   #if PY_MAJOR_VERSION >= 3
   {
@@ -3937,186 +4513,576 @@ if (!__Pyx_RefNanny) {
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_convert2json, __pyx_t_2) < 0) __PYX_ERR(0, 71, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "excel2json.pyx":74
- *     return ReadXLSX(filename, outputfiletxt, outputfilejson, sheetname)
- * 
+  /* "excel2json.pyx":87
+ *     else:
+ *         printf("Error: path does not exist")
  * if __name__ == '__main__':             # <<<<<<<<<<<<<<
  *     WelcomeMessage()
  *     # Defining Arguments
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_name); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 74, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_name_2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 87, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = (__Pyx_PyString_Equals(__pyx_t_2, __pyx_n_s_main, Py_EQ)); if (unlikely(__pyx_t_3 < 0)) __PYX_ERR(0, 74, __pyx_L1_error)
+  __pyx_t_3 = (__Pyx_PyString_Equals(__pyx_t_2, __pyx_n_s_main, Py_EQ)); if (unlikely(__pyx_t_3 < 0)) __PYX_ERR(0, 87, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   if (__pyx_t_3) {
 
-    /* "excel2json.pyx":75
- * 
+    /* "excel2json.pyx":88
+ *         printf("Error: path does not exist")
  * if __name__ == '__main__':
  *     WelcomeMessage()             # <<<<<<<<<<<<<<
  *     # Defining Arguments
  *     vapparser = ArgumentParser()
  */
-    __pyx_t_2 = __pyx_f_10excel2json_WelcomeMessage(); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 75, __pyx_L1_error)
+    __pyx_t_2 = __pyx_f_10excel2json_WelcomeMessage(); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 88, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-    /* "excel2json.pyx":77
+    /* "excel2json.pyx":90
  *     WelcomeMessage()
  *     # Defining Arguments
  *     vapparser = ArgumentParser()             # <<<<<<<<<<<<<<
- *     vapparser.add_argument("--input", "-i", type=str, required=True)
- *     vapparser.add_argument("--outputjson", "-oj", type=str, required=True)
+ *     vapparser.add_argument("--input", "-i", type=str)
+ *     vapparser.add_argument("--outputjson", "-oj", type = str)
  */
-    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_ArgumentParser); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 77, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_ArgumentParser); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 90, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 77, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 90, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    if (PyDict_SetItem(__pyx_d, __pyx_n_s_vapparser, __pyx_t_1) < 0) __PYX_ERR(0, 77, __pyx_L1_error)
+    if (PyDict_SetItem(__pyx_d, __pyx_n_s_vapparser, __pyx_t_1) < 0) __PYX_ERR(0, 90, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-    /* "excel2json.pyx":78
+    /* "excel2json.pyx":91
  *     # Defining Arguments
  *     vapparser = ArgumentParser()
- *     vapparser.add_argument("--input", "-i", type=str, required=True)             # <<<<<<<<<<<<<<
- *     vapparser.add_argument("--outputjson", "-oj", type=str, required=True)
- *     vapparser.add_argument("--outputtxt", "-ot", type= str, required=True)
+ *     vapparser.add_argument("--input", "-i", type=str)             # <<<<<<<<<<<<<<
+ *     vapparser.add_argument("--outputjson", "-oj", type = str)
+ *     vapparser.add_argument("--outputtxt", "-ot", type = str)
  */
-    __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_vapparser); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 78, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_vapparser); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 91, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_add_argument); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 78, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_add_argument); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 91, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __pyx_t_1 = __Pyx_PyDict_NewPresized(2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 78, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 91, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_type, ((PyObject *)(&PyString_Type))) < 0) __PYX_ERR(0, 78, __pyx_L1_error)
-    if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_required, Py_True) < 0) __PYX_ERR(0, 78, __pyx_L1_error)
-    __pyx_t_4 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_tuple__5, __pyx_t_1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 78, __pyx_L1_error)
+    if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_type, ((PyObject *)(&PyString_Type))) < 0) __PYX_ERR(0, 91, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_tuple__8, __pyx_t_1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 91, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-    /* "excel2json.pyx":79
+    /* "excel2json.pyx":92
  *     vapparser = ArgumentParser()
- *     vapparser.add_argument("--input", "-i", type=str, required=True)
- *     vapparser.add_argument("--outputjson", "-oj", type=str, required=True)             # <<<<<<<<<<<<<<
- *     vapparser.add_argument("--outputtxt", "-ot", type= str, required=True)
- *     vapparser.add_argument("--sheetname", "-sn", type= str, required=True)
+ *     vapparser.add_argument("--input", "-i", type=str)
+ *     vapparser.add_argument("--outputjson", "-oj", type = str)             # <<<<<<<<<<<<<<
+ *     vapparser.add_argument("--outputtxt", "-ot", type = str)
+ *     vapparser.add_argument("--sheetname", "-sn", type = str)
  */
-    __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_vapparser); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 79, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_vapparser); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 92, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_add_argument); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 79, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_add_argument); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 92, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __pyx_t_4 = __Pyx_PyDict_NewPresized(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 79, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 92, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
-    if (PyDict_SetItem(__pyx_t_4, __pyx_n_s_type, ((PyObject *)(&PyString_Type))) < 0) __PYX_ERR(0, 79, __pyx_L1_error)
-    if (PyDict_SetItem(__pyx_t_4, __pyx_n_s_required, Py_True) < 0) __PYX_ERR(0, 79, __pyx_L1_error)
-    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_1, __pyx_tuple__6, __pyx_t_4); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 79, __pyx_L1_error)
+    if (PyDict_SetItem(__pyx_t_4, __pyx_n_s_type, ((PyObject *)(&PyString_Type))) < 0) __PYX_ERR(0, 92, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_1, __pyx_tuple__9, __pyx_t_4); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 92, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-    /* "excel2json.pyx":80
- *     vapparser.add_argument("--input", "-i", type=str, required=True)
- *     vapparser.add_argument("--outputjson", "-oj", type=str, required=True)
- *     vapparser.add_argument("--outputtxt", "-ot", type= str, required=True)             # <<<<<<<<<<<<<<
- *     vapparser.add_argument("--sheetname", "-sn", type= str, required=True)
+    /* "excel2json.pyx":93
+ *     vapparser.add_argument("--input", "-i", type=str)
+ *     vapparser.add_argument("--outputjson", "-oj", type = str)
+ *     vapparser.add_argument("--outputtxt", "-ot", type = str)             # <<<<<<<<<<<<<<
+ *     vapparser.add_argument("--sheetname", "-sn", type = str)
+ *     vapparser.add_argument("--batchpath", "-bp", type = str)
+ */
+    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_vapparser); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 93, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_add_argument); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 93, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __pyx_t_2 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 93, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_type, ((PyObject *)(&PyString_Type))) < 0) __PYX_ERR(0, 93, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_tuple__10, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 93, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+
+    /* "excel2json.pyx":94
+ *     vapparser.add_argument("--outputjson", "-oj", type = str)
+ *     vapparser.add_argument("--outputtxt", "-ot", type = str)
+ *     vapparser.add_argument("--sheetname", "-sn", type = str)             # <<<<<<<<<<<<<<
+ *     vapparser.add_argument("--batchpath", "-bp", type = str)
  *     args = vapparser.parse_args()
  */
-    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_vapparser); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 80, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_vapparser); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 94, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_add_argument); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 94, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_add_argument); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 80, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+    __pyx_t_1 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 94, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_type, ((PyObject *)(&PyString_Type))) < 0) __PYX_ERR(0, 94, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_tuple__11, __pyx_t_1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 94, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __pyx_t_2 = __Pyx_PyDict_NewPresized(2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 80, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_2);
-    if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_type, ((PyObject *)(&PyString_Type))) < 0) __PYX_ERR(0, 80, __pyx_L1_error)
-    if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_required, Py_True) < 0) __PYX_ERR(0, 80, __pyx_L1_error)
-    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_tuple__7, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 80, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_1);
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-    /* "excel2json.pyx":81
- *     vapparser.add_argument("--outputjson", "-oj", type=str, required=True)
- *     vapparser.add_argument("--outputtxt", "-ot", type= str, required=True)
- *     vapparser.add_argument("--sheetname", "-sn", type= str, required=True)             # <<<<<<<<<<<<<<
+    /* "excel2json.pyx":95
+ *     vapparser.add_argument("--outputtxt", "-ot", type = str)
+ *     vapparser.add_argument("--sheetname", "-sn", type = str)
+ *     vapparser.add_argument("--batchpath", "-bp", type = str)             # <<<<<<<<<<<<<<
  *     args = vapparser.parse_args()
- *     ReadXLSX(args.input, args.outputtxt, args.outputjson, args.sheetname)
- */
-    __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_vapparser); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 81, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_add_argument); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 81, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_2);
-    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __pyx_t_1 = __Pyx_PyDict_NewPresized(2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 81, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_1);
-    if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_type, ((PyObject *)(&PyString_Type))) < 0) __PYX_ERR(0, 81, __pyx_L1_error)
-    if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_required, Py_True) < 0) __PYX_ERR(0, 81, __pyx_L1_error)
-    __pyx_t_4 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_tuple__8, __pyx_t_1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 81, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_4);
-    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-
-    /* "excel2json.pyx":82
- *     vapparser.add_argument("--outputtxt", "-ot", type= str, required=True)
- *     vapparser.add_argument("--sheetname", "-sn", type= str, required=True)
- *     args = vapparser.parse_args()             # <<<<<<<<<<<<<<
- *     ReadXLSX(args.input, args.outputtxt, args.outputjson, args.sheetname)
- */
-    __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_vapparser); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 82, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_parse_args); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 82, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_1);
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __pyx_t_4 = __Pyx_PyObject_CallNoArg(__pyx_t_1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 82, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_4);
-    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    if (PyDict_SetItem(__pyx_d, __pyx_n_s_args, __pyx_t_4) < 0) __PYX_ERR(0, 82, __pyx_L1_error)
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-
-    /* "excel2json.pyx":83
- *     vapparser.add_argument("--sheetname", "-sn", type= str, required=True)
- *     args = vapparser.parse_args()
- *     ReadXLSX(args.input, args.outputtxt, args.outputjson, args.sheetname)             # <<<<<<<<<<<<<<
- */
-    __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_args); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 83, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_input_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 83, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_1);
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_args); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 83, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_outputtxt_2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 83, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_2);
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_args); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 83, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_outputjson_2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 83, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_5);
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_args); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 83, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_sheetname); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 83, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_6);
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __pyx_t_4 = __pyx_f_10excel2json_ReadXLSX(__pyx_t_1, __pyx_t_2, __pyx_t_5, __pyx_t_6); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 83, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_4);
-    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-    __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-
-    /* "excel2json.pyx":74
- *     return ReadXLSX(filename, outputfiletxt, outputfilejson, sheetname)
  * 
+ */
+    __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_vapparser); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 95, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_add_argument); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 95, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __pyx_t_4 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 95, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    if (PyDict_SetItem(__pyx_t_4, __pyx_n_s_type, ((PyObject *)(&PyString_Type))) < 0) __PYX_ERR(0, 95, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_1, __pyx_tuple__12, __pyx_t_4); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 95, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "excel2json.pyx":96
+ *     vapparser.add_argument("--sheetname", "-sn", type = str)
+ *     vapparser.add_argument("--batchpath", "-bp", type = str)
+ *     args = vapparser.parse_args()             # <<<<<<<<<<<<<<
+ * 
+ *     if(args.batchpath is not None):
+ */
+    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_vapparser); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 96, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_parse_args); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 96, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __pyx_t_2 = __Pyx_PyObject_CallNoArg(__pyx_t_4); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 96, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    if (PyDict_SetItem(__pyx_d, __pyx_n_s_args, __pyx_t_2) < 0) __PYX_ERR(0, 96, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "excel2json.pyx":98
+ *     args = vapparser.parse_args()
+ * 
+ *     if(args.batchpath is not None):             # <<<<<<<<<<<<<<
+ *         if(args.sheetname is None):
+ *             print("Running in Batch mode on path: " + args.batchpath + "; using first sheet")
+ */
+    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_args); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 98, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_batchpath_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 98, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __pyx_t_3 = (__pyx_t_4 != Py_None);
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __pyx_t_5 = (__pyx_t_3 != 0);
+    if (__pyx_t_5) {
+
+      /* "excel2json.pyx":99
+ * 
+ *     if(args.batchpath is not None):
+ *         if(args.sheetname is None):             # <<<<<<<<<<<<<<
+ *             print("Running in Batch mode on path: " + args.batchpath + "; using first sheet")
+ *             filewalker(args.batchpath, 0)
+ */
+      __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_args); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 99, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_4);
+      __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_sheetname); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 99, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+      __pyx_t_5 = (__pyx_t_2 == Py_None);
+      __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+      __pyx_t_3 = (__pyx_t_5 != 0);
+      if (__pyx_t_3) {
+
+        /* "excel2json.pyx":100
+ *     if(args.batchpath is not None):
+ *         if(args.sheetname is None):
+ *             print("Running in Batch mode on path: " + args.batchpath + "; using first sheet")             # <<<<<<<<<<<<<<
+ *             filewalker(args.batchpath, 0)
+ * 
+ */
+        __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_args); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 100, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_2);
+        __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_batchpath_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 100, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_4);
+        __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+        __pyx_t_2 = PyNumber_Add(__pyx_kp_s_Running_in_Batch_mode_on_path, __pyx_t_4); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 100, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_2);
+        __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+        __pyx_t_4 = PyNumber_Add(__pyx_t_2, __pyx_kp_s_using_first_sheet); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 100, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_4);
+        __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+        if (__Pyx_PrintOne(0, __pyx_t_4) < 0) __PYX_ERR(0, 100, __pyx_L1_error)
+        __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+
+        /* "excel2json.pyx":101
+ *         if(args.sheetname is None):
+ *             print("Running in Batch mode on path: " + args.batchpath + "; using first sheet")
+ *             filewalker(args.batchpath, 0)             # <<<<<<<<<<<<<<
+ * 
+ *         else:
+ */
+        __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_args); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 101, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_4);
+        __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_batchpath_2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 101, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_2);
+        __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+        __pyx_t_4 = __pyx_f_10excel2json_filewalker(__pyx_t_2, __pyx_int_0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 101, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_4);
+        __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+        __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+
+        /* "excel2json.pyx":99
+ * 
+ *     if(args.batchpath is not None):
+ *         if(args.sheetname is None):             # <<<<<<<<<<<<<<
+ *             print("Running in Batch mode on path: " + args.batchpath + "; using first sheet")
+ *             filewalker(args.batchpath, 0)
+ */
+        goto __pyx_L4;
+      }
+
+      /* "excel2json.pyx":104
+ * 
+ *         else:
+ *             print("Running in Batch mode on path: " + args.batchpath + "; using sheet: " + args.sheetname)             # <<<<<<<<<<<<<<
+ *             filewalker(args.batchpath, args.sheetname)
+ * 
+ */
+      /*else*/ {
+        __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_args); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 104, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_4);
+        __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_batchpath_2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 104, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_2);
+        __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+        __pyx_t_4 = PyNumber_Add(__pyx_kp_s_Running_in_Batch_mode_on_path, __pyx_t_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 104, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_4);
+        __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+        __pyx_t_2 = PyNumber_Add(__pyx_t_4, __pyx_kp_s_using_sheet); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 104, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_2);
+        __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+        __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_args); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 104, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_4);
+        __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_sheetname); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 104, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_1);
+        __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+        __pyx_t_4 = PyNumber_Add(__pyx_t_2, __pyx_t_1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 104, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_4);
+        __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+        __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+        if (__Pyx_PrintOne(0, __pyx_t_4) < 0) __PYX_ERR(0, 104, __pyx_L1_error)
+        __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+
+        /* "excel2json.pyx":105
+ *         else:
+ *             print("Running in Batch mode on path: " + args.batchpath + "; using sheet: " + args.sheetname)
+ *             filewalker(args.batchpath, args.sheetname)             # <<<<<<<<<<<<<<
+ * 
+ *     elif(args.input is None):
+ */
+        __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_args); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 105, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_4);
+        __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_batchpath_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 105, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_1);
+        __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+        __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_args); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 105, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_4);
+        __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_sheetname); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 105, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_2);
+        __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+        __pyx_t_4 = __pyx_f_10excel2json_filewalker(__pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 105, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_4);
+        __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+        __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+        __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+      }
+      __pyx_L4:;
+
+      /* "excel2json.pyx":98
+ *     args = vapparser.parse_args()
+ * 
+ *     if(args.batchpath is not None):             # <<<<<<<<<<<<<<
+ *         if(args.sheetname is None):
+ *             print("Running in Batch mode on path: " + args.batchpath + "; using first sheet")
+ */
+      goto __pyx_L3;
+    }
+
+    /* "excel2json.pyx":107
+ *             filewalker(args.batchpath, args.sheetname)
+ * 
+ *     elif(args.input is None):             # <<<<<<<<<<<<<<
+ *         printf("Error: Input Filename needed\n")
+ *     elif(args.outputtxt is None):
+ */
+    __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_args); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 107, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_input_2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 107, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __pyx_t_3 = (__pyx_t_2 == Py_None);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __pyx_t_5 = (__pyx_t_3 != 0);
+    if (__pyx_t_5) {
+
+      /* "excel2json.pyx":108
+ * 
+ *     elif(args.input is None):
+ *         printf("Error: Input Filename needed\n")             # <<<<<<<<<<<<<<
+ *     elif(args.outputtxt is None):
+ *         printf("Error: Output TXT Filename needed\n")
+ */
+      (void)(printf(((char const *)"Error: Input Filename needed\n")));
+
+      /* "excel2json.pyx":107
+ *             filewalker(args.batchpath, args.sheetname)
+ * 
+ *     elif(args.input is None):             # <<<<<<<<<<<<<<
+ *         printf("Error: Input Filename needed\n")
+ *     elif(args.outputtxt is None):
+ */
+      goto __pyx_L3;
+    }
+
+    /* "excel2json.pyx":109
+ *     elif(args.input is None):
+ *         printf("Error: Input Filename needed\n")
+ *     elif(args.outputtxt is None):             # <<<<<<<<<<<<<<
+ *         printf("Error: Output TXT Filename needed\n")
+ *     elif(args.outputjson is None):
+ */
+    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_args); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 109, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_outputtxt_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 109, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __pyx_t_5 = (__pyx_t_4 == Py_None);
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __pyx_t_3 = (__pyx_t_5 != 0);
+    if (__pyx_t_3) {
+
+      /* "excel2json.pyx":110
+ *         printf("Error: Input Filename needed\n")
+ *     elif(args.outputtxt is None):
+ *         printf("Error: Output TXT Filename needed\n")             # <<<<<<<<<<<<<<
+ *     elif(args.outputjson is None):
+ *         printf("Error: Output JSON  Filename needed\n")
+ */
+      (void)(printf(((char const *)"Error: Output TXT Filename needed\n")));
+
+      /* "excel2json.pyx":109
+ *     elif(args.input is None):
+ *         printf("Error: Input Filename needed\n")
+ *     elif(args.outputtxt is None):             # <<<<<<<<<<<<<<
+ *         printf("Error: Output TXT Filename needed\n")
+ *     elif(args.outputjson is None):
+ */
+      goto __pyx_L3;
+    }
+
+    /* "excel2json.pyx":111
+ *     elif(args.outputtxt is None):
+ *         printf("Error: Output TXT Filename needed\n")
+ *     elif(args.outputjson is None):             # <<<<<<<<<<<<<<
+ *         printf("Error: Output JSON  Filename needed\n")
+ *     elif(args.sheetname is None):
+ */
+    __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_args); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 111, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_outputjson_2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 111, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __pyx_t_3 = (__pyx_t_2 == Py_None);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __pyx_t_5 = (__pyx_t_3 != 0);
+    if (__pyx_t_5) {
+
+      /* "excel2json.pyx":112
+ *         printf("Error: Output TXT Filename needed\n")
+ *     elif(args.outputjson is None):
+ *         printf("Error: Output JSON  Filename needed\n")             # <<<<<<<<<<<<<<
+ *     elif(args.sheetname is None):
+ *         printf("Error: Sheetname needed\n")
+ */
+      (void)(printf(((char const *)"Error: Output JSON  Filename needed\n")));
+
+      /* "excel2json.pyx":111
+ *     elif(args.outputtxt is None):
+ *         printf("Error: Output TXT Filename needed\n")
+ *     elif(args.outputjson is None):             # <<<<<<<<<<<<<<
+ *         printf("Error: Output JSON  Filename needed\n")
+ *     elif(args.sheetname is None):
+ */
+      goto __pyx_L3;
+    }
+
+    /* "excel2json.pyx":113
+ *     elif(args.outputjson is None):
+ *         printf("Error: Output JSON  Filename needed\n")
+ *     elif(args.sheetname is None):             # <<<<<<<<<<<<<<
+ *         printf("Error: Sheetname needed\n")
+ *     elif(args.input is not None) and (args.outputjson is not None) and (args.outputtxt is not None ) and (args.sheetname is not None):
+ */
+    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_args); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 113, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_sheetname); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 113, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __pyx_t_5 = (__pyx_t_4 == Py_None);
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __pyx_t_3 = (__pyx_t_5 != 0);
+    if (__pyx_t_3) {
+
+      /* "excel2json.pyx":114
+ *         printf("Error: Output JSON  Filename needed\n")
+ *     elif(args.sheetname is None):
+ *         printf("Error: Sheetname needed\n")             # <<<<<<<<<<<<<<
+ *     elif(args.input is not None) and (args.outputjson is not None) and (args.outputtxt is not None ) and (args.sheetname is not None):
+ *         ReadXLSX(args.input, args.outputtxt, args.outputjson, args.sheetname)
+ */
+      (void)(printf(((char const *)"Error: Sheetname needed\n")));
+
+      /* "excel2json.pyx":113
+ *     elif(args.outputjson is None):
+ *         printf("Error: Output JSON  Filename needed\n")
+ *     elif(args.sheetname is None):             # <<<<<<<<<<<<<<
+ *         printf("Error: Sheetname needed\n")
+ *     elif(args.input is not None) and (args.outputjson is not None) and (args.outputtxt is not None ) and (args.sheetname is not None):
+ */
+      goto __pyx_L3;
+    }
+
+    /* "excel2json.pyx":115
+ *     elif(args.sheetname is None):
+ *         printf("Error: Sheetname needed\n")
+ *     elif(args.input is not None) and (args.outputjson is not None) and (args.outputtxt is not None ) and (args.sheetname is not None):             # <<<<<<<<<<<<<<
+ *         ReadXLSX(args.input, args.outputtxt, args.outputjson, args.sheetname)
+ *     else:
+ */
+    __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_args); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 115, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_input_2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 115, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __pyx_t_5 = (__pyx_t_2 != Py_None);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __pyx_t_6 = (__pyx_t_5 != 0);
+    if (__pyx_t_6) {
+    } else {
+      __pyx_t_3 = __pyx_t_6;
+      goto __pyx_L5_bool_binop_done;
+    }
+    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_args); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 115, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_outputjson_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 115, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __pyx_t_6 = (__pyx_t_4 != Py_None);
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __pyx_t_5 = (__pyx_t_6 != 0);
+    if (__pyx_t_5) {
+    } else {
+      __pyx_t_3 = __pyx_t_5;
+      goto __pyx_L5_bool_binop_done;
+    }
+    __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_args); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 115, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_outputtxt_2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 115, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __pyx_t_5 = (__pyx_t_2 != Py_None);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __pyx_t_6 = (__pyx_t_5 != 0);
+    if (__pyx_t_6) {
+    } else {
+      __pyx_t_3 = __pyx_t_6;
+      goto __pyx_L5_bool_binop_done;
+    }
+    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_args); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 115, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_sheetname); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 115, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __pyx_t_6 = (__pyx_t_4 != Py_None);
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __pyx_t_5 = (__pyx_t_6 != 0);
+    __pyx_t_3 = __pyx_t_5;
+    __pyx_L5_bool_binop_done:;
+    if (__pyx_t_3) {
+
+      /* "excel2json.pyx":116
+ *         printf("Error: Sheetname needed\n")
+ *     elif(args.input is not None) and (args.outputjson is not None) and (args.outputtxt is not None ) and (args.sheetname is not None):
+ *         ReadXLSX(args.input, args.outputtxt, args.outputjson, args.sheetname)             # <<<<<<<<<<<<<<
+ *     else:
+ *         printf("Error: Argument could not be parsed\n")
+ */
+      __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_args); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 116, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_4);
+      __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_input_2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 116, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+      __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_args); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 116, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_4);
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_outputtxt_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 116, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_1);
+      __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+      __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_args); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 116, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_4);
+      __pyx_t_7 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_outputjson_2); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 116, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+      __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_args); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 116, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_4);
+      __pyx_t_8 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_sheetname); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 116, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+      __pyx_t_4 = __pyx_f_10excel2json_ReadXLSX(__pyx_t_2, __pyx_t_1, __pyx_t_7, __pyx_t_8); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 116, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_4);
+      __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+      __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+      __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+      __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+
+      /* "excel2json.pyx":115
+ *     elif(args.sheetname is None):
+ *         printf("Error: Sheetname needed\n")
+ *     elif(args.input is not None) and (args.outputjson is not None) and (args.outputtxt is not None ) and (args.sheetname is not None):             # <<<<<<<<<<<<<<
+ *         ReadXLSX(args.input, args.outputtxt, args.outputjson, args.sheetname)
+ *     else:
+ */
+      goto __pyx_L3;
+    }
+
+    /* "excel2json.pyx":118
+ *         ReadXLSX(args.input, args.outputtxt, args.outputjson, args.sheetname)
+ *     else:
+ *         printf("Error: Argument could not be parsed\n")             # <<<<<<<<<<<<<<
+ */
+    /*else*/ {
+      (void)(printf(((char const *)"Error: Argument could not be parsed\n")));
+    }
+    __pyx_L3:;
+
+    /* "excel2json.pyx":87
+ *     else:
+ *         printf("Error: path does not exist")
  * if __name__ == '__main__':             # <<<<<<<<<<<<<<
  *     WelcomeMessage()
  *     # Defining Arguments
@@ -4140,8 +5106,8 @@ if (!__Pyx_RefNanny) {
   __Pyx_XDECREF(__pyx_t_1);
   __Pyx_XDECREF(__pyx_t_2);
   __Pyx_XDECREF(__pyx_t_4);
-  __Pyx_XDECREF(__pyx_t_5);
-  __Pyx_XDECREF(__pyx_t_6);
+  __Pyx_XDECREF(__pyx_t_7);
+  __Pyx_XDECREF(__pyx_t_8);
   if (__pyx_m) {
     if (__pyx_d) {
       __Pyx_AddTraceback("init excel2json", __pyx_clineno, __pyx_lineno, __pyx_filename);
@@ -4955,123 +5921,101 @@ bad:
     return -1;
 }
 
-/* PyObject_GenericGetAttrNoDict */
-#if CYTHON_USE_TYPE_SLOTS && CYTHON_USE_PYTYPE_LOOKUP && PY_VERSION_HEX < 0x03070000
-static PyObject *__Pyx_RaiseGenericGetAttributeError(PyTypeObject *tp, PyObject *attr_name) {
-    PyErr_Format(PyExc_AttributeError,
-#if PY_MAJOR_VERSION >= 3
-                 "'%.50s' object has no attribute '%U'",
-                 tp->tp_name, attr_name);
-#else
-                 "'%.50s' object has no attribute '%.400s'",
-                 tp->tp_name, PyString_AS_STRING(attr_name));
-#endif
-    return NULL;
-}
-static CYTHON_INLINE PyObject* __Pyx_PyObject_GenericGetAttrNoDict(PyObject* obj, PyObject* attr_name) {
-    PyObject *descr;
-    PyTypeObject *tp = Py_TYPE(obj);
-    if (unlikely(!PyString_Check(attr_name))) {
-        return PyObject_GenericGetAttr(obj, attr_name);
-    }
-    assert(!tp->tp_dictoffset);
-    descr = _PyType_Lookup(tp, attr_name);
-    if (unlikely(!descr)) {
-        return __Pyx_RaiseGenericGetAttributeError(tp, attr_name);
-    }
-    Py_INCREF(descr);
-    #if PY_MAJOR_VERSION < 3
-    if (likely(PyType_HasFeature(Py_TYPE(descr), Py_TPFLAGS_HAVE_CLASS)))
-    #endif
-    {
-        descrgetfunc f = Py_TYPE(descr)->tp_descr_get;
-        if (unlikely(f)) {
-            PyObject *res = f(descr, obj, (PyObject *)tp);
-            Py_DECREF(descr);
-            return res;
+/* SliceObject */
+static CYTHON_INLINE PyObject* __Pyx_PyObject_GetSlice(PyObject* obj,
+        Py_ssize_t cstart, Py_ssize_t cstop,
+        PyObject** _py_start, PyObject** _py_stop, PyObject** _py_slice,
+        int has_cstart, int has_cstop, CYTHON_UNUSED int wraparound) {
+#if CYTHON_USE_TYPE_SLOTS
+    PyMappingMethods* mp;
+#if PY_MAJOR_VERSION < 3
+    PySequenceMethods* ms = Py_TYPE(obj)->tp_as_sequence;
+    if (likely(ms && ms->sq_slice)) {
+        if (!has_cstart) {
+            if (_py_start && (*_py_start != Py_None)) {
+                cstart = __Pyx_PyIndex_AsSsize_t(*_py_start);
+                if ((cstart == (Py_ssize_t)-1) && PyErr_Occurred()) goto bad;
+            } else
+                cstart = 0;
         }
-    }
-    return descr;
-}
-#endif
-
-/* Import */
-static PyObject *__Pyx_Import(PyObject *name, PyObject *from_list, int level) {
-    PyObject *empty_list = 0;
-    PyObject *module = 0;
-    PyObject *global_dict = 0;
-    PyObject *empty_dict = 0;
-    PyObject *list;
-    #if PY_MAJOR_VERSION < 3
-    PyObject *py_import;
-    py_import = __Pyx_PyObject_GetAttrStr(__pyx_b, __pyx_n_s_import);
-    if (!py_import)
-        goto bad;
-    #endif
-    if (from_list)
-        list = from_list;
-    else {
-        empty_list = PyList_New(0);
-        if (!empty_list)
-            goto bad;
-        list = empty_list;
-    }
-    global_dict = PyModule_GetDict(__pyx_m);
-    if (!global_dict)
-        goto bad;
-    empty_dict = PyDict_New();
-    if (!empty_dict)
-        goto bad;
-    {
-        #if PY_MAJOR_VERSION >= 3
-        if (level == -1) {
-            if ((1) && (strchr(__Pyx_MODULE_NAME, '.'))) {
-                module = PyImport_ImportModuleLevelObject(
-                    name, global_dict, empty_dict, list, 1);
-                if (!module) {
-                    if (!PyErr_ExceptionMatches(PyExc_ImportError))
-                        goto bad;
-                    PyErr_Clear();
+        if (!has_cstop) {
+            if (_py_stop && (*_py_stop != Py_None)) {
+                cstop = __Pyx_PyIndex_AsSsize_t(*_py_stop);
+                if ((cstop == (Py_ssize_t)-1) && PyErr_Occurred()) goto bad;
+            } else
+                cstop = PY_SSIZE_T_MAX;
+        }
+        if (wraparound && unlikely((cstart < 0) | (cstop < 0)) && likely(ms->sq_length)) {
+            Py_ssize_t l = ms->sq_length(obj);
+            if (likely(l >= 0)) {
+                if (cstop < 0) {
+                    cstop += l;
+                    if (cstop < 0) cstop = 0;
                 }
+                if (cstart < 0) {
+                    cstart += l;
+                    if (cstart < 0) cstart = 0;
+                }
+            } else {
+                if (!PyErr_ExceptionMatches(PyExc_OverflowError))
+                    goto bad;
+                PyErr_Clear();
             }
-            level = 0;
         }
-        #endif
-        if (!module) {
-            #if PY_MAJOR_VERSION < 3
-            PyObject *py_level = PyInt_FromLong(level);
-            if (!py_level)
-                goto bad;
-            module = PyObject_CallFunctionObjArgs(py_import,
-                name, global_dict, empty_dict, list, py_level, (PyObject *)NULL);
-            Py_DECREF(py_level);
-            #else
-            module = PyImport_ImportModuleLevelObject(
-                name, global_dict, empty_dict, list, level);
-            #endif
-        }
+        return ms->sq_slice(obj, cstart, cstop);
     }
+#endif
+    mp = Py_TYPE(obj)->tp_as_mapping;
+    if (likely(mp && mp->mp_subscript))
+#endif
+    {
+        PyObject* result;
+        PyObject *py_slice, *py_start, *py_stop;
+        if (_py_slice) {
+            py_slice = *_py_slice;
+        } else {
+            PyObject* owned_start = NULL;
+            PyObject* owned_stop = NULL;
+            if (_py_start) {
+                py_start = *_py_start;
+            } else {
+                if (has_cstart) {
+                    owned_start = py_start = PyInt_FromSsize_t(cstart);
+                    if (unlikely(!py_start)) goto bad;
+                } else
+                    py_start = Py_None;
+            }
+            if (_py_stop) {
+                py_stop = *_py_stop;
+            } else {
+                if (has_cstop) {
+                    owned_stop = py_stop = PyInt_FromSsize_t(cstop);
+                    if (unlikely(!py_stop)) {
+                        Py_XDECREF(owned_start);
+                        goto bad;
+                    }
+                } else
+                    py_stop = Py_None;
+            }
+            py_slice = PySlice_New(py_start, py_stop, Py_None);
+            Py_XDECREF(owned_start);
+            Py_XDECREF(owned_stop);
+            if (unlikely(!py_slice)) goto bad;
+        }
+#if CYTHON_USE_TYPE_SLOTS
+        result = mp->mp_subscript(obj, py_slice);
+#else
+        result = PyObject_GetItem(obj, py_slice);
+#endif
+        if (!_py_slice) {
+            Py_DECREF(py_slice);
+        }
+        return result;
+    }
+    PyErr_Format(PyExc_TypeError,
+        "'%.200s' object is unsliceable", Py_TYPE(obj)->tp_name);
 bad:
-    #if PY_MAJOR_VERSION < 3
-    Py_XDECREF(py_import);
-    #endif
-    Py_XDECREF(empty_list);
-    Py_XDECREF(empty_dict);
-    return module;
-}
-
-/* ImportFrom */
-static PyObject* __Pyx_ImportFrom(PyObject* module, PyObject* name) {
-    PyObject* value = __Pyx_PyObject_GetAttrStr(module, name);
-    if (unlikely(!value) && PyErr_ExceptionMatches(PyExc_AttributeError)) {
-        PyErr_Format(PyExc_ImportError,
-        #if PY_MAJOR_VERSION < 3
-            "cannot import name %.230s", PyString_AS_STRING(name));
-        #else
-            "cannot import name %S", name);
-        #endif
-    }
-    return value;
+    return NULL;
 }
 
 /* BytesEquals */
@@ -5246,6 +6190,125 @@ static CYTHON_INLINE void __Pyx_ErrFetchInState(PyThreadState *tstate, PyObject 
     tstate->curexc_traceback = 0;
 }
 #endif
+
+/* PyObject_GenericGetAttrNoDict */
+#if CYTHON_USE_TYPE_SLOTS && CYTHON_USE_PYTYPE_LOOKUP && PY_VERSION_HEX < 0x03070000
+static PyObject *__Pyx_RaiseGenericGetAttributeError(PyTypeObject *tp, PyObject *attr_name) {
+    PyErr_Format(PyExc_AttributeError,
+#if PY_MAJOR_VERSION >= 3
+                 "'%.50s' object has no attribute '%U'",
+                 tp->tp_name, attr_name);
+#else
+                 "'%.50s' object has no attribute '%.400s'",
+                 tp->tp_name, PyString_AS_STRING(attr_name));
+#endif
+    return NULL;
+}
+static CYTHON_INLINE PyObject* __Pyx_PyObject_GenericGetAttrNoDict(PyObject* obj, PyObject* attr_name) {
+    PyObject *descr;
+    PyTypeObject *tp = Py_TYPE(obj);
+    if (unlikely(!PyString_Check(attr_name))) {
+        return PyObject_GenericGetAttr(obj, attr_name);
+    }
+    assert(!tp->tp_dictoffset);
+    descr = _PyType_Lookup(tp, attr_name);
+    if (unlikely(!descr)) {
+        return __Pyx_RaiseGenericGetAttributeError(tp, attr_name);
+    }
+    Py_INCREF(descr);
+    #if PY_MAJOR_VERSION < 3
+    if (likely(PyType_HasFeature(Py_TYPE(descr), Py_TPFLAGS_HAVE_CLASS)))
+    #endif
+    {
+        descrgetfunc f = Py_TYPE(descr)->tp_descr_get;
+        if (unlikely(f)) {
+            PyObject *res = f(descr, obj, (PyObject *)tp);
+            Py_DECREF(descr);
+            return res;
+        }
+    }
+    return descr;
+}
+#endif
+
+/* Import */
+static PyObject *__Pyx_Import(PyObject *name, PyObject *from_list, int level) {
+    PyObject *empty_list = 0;
+    PyObject *module = 0;
+    PyObject *global_dict = 0;
+    PyObject *empty_dict = 0;
+    PyObject *list;
+    #if PY_MAJOR_VERSION < 3
+    PyObject *py_import;
+    py_import = __Pyx_PyObject_GetAttrStr(__pyx_b, __pyx_n_s_import);
+    if (!py_import)
+        goto bad;
+    #endif
+    if (from_list)
+        list = from_list;
+    else {
+        empty_list = PyList_New(0);
+        if (!empty_list)
+            goto bad;
+        list = empty_list;
+    }
+    global_dict = PyModule_GetDict(__pyx_m);
+    if (!global_dict)
+        goto bad;
+    empty_dict = PyDict_New();
+    if (!empty_dict)
+        goto bad;
+    {
+        #if PY_MAJOR_VERSION >= 3
+        if (level == -1) {
+            if ((1) && (strchr(__Pyx_MODULE_NAME, '.'))) {
+                module = PyImport_ImportModuleLevelObject(
+                    name, global_dict, empty_dict, list, 1);
+                if (!module) {
+                    if (!PyErr_ExceptionMatches(PyExc_ImportError))
+                        goto bad;
+                    PyErr_Clear();
+                }
+            }
+            level = 0;
+        }
+        #endif
+        if (!module) {
+            #if PY_MAJOR_VERSION < 3
+            PyObject *py_level = PyInt_FromLong(level);
+            if (!py_level)
+                goto bad;
+            module = PyObject_CallFunctionObjArgs(py_import,
+                name, global_dict, empty_dict, list, py_level, (PyObject *)NULL);
+            Py_DECREF(py_level);
+            #else
+            module = PyImport_ImportModuleLevelObject(
+                name, global_dict, empty_dict, list, level);
+            #endif
+        }
+    }
+bad:
+    #if PY_MAJOR_VERSION < 3
+    Py_XDECREF(py_import);
+    #endif
+    Py_XDECREF(empty_list);
+    Py_XDECREF(empty_dict);
+    return module;
+}
+
+/* ImportFrom */
+static PyObject* __Pyx_ImportFrom(PyObject* module, PyObject* name) {
+    PyObject* value = __Pyx_PyObject_GetAttrStr(module, name);
+    if (unlikely(!value) && PyErr_ExceptionMatches(PyExc_AttributeError)) {
+        PyErr_Format(PyExc_ImportError,
+        #if PY_MAJOR_VERSION < 3
+            "cannot import name %.230s", PyString_AS_STRING(name));
+        #else
+            "cannot import name %S", name);
+        #endif
+    }
+    return value;
+}
 
 /* CLineInTraceback */
 #ifndef CYTHON_CLINE_IN_TRACEBACK

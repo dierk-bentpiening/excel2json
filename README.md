@@ -50,7 +50,21 @@ Change Python version in BuildStandAlone.sh to the mathing version of Python3 in
 `resultjson = convert2json("XLSX/test3.xlsx", "test.txt", "test.json", "Tabelle1")`
 
 **Usage Standalone:**    
-`usage: excel2json.run [-h] --input INPUT --outputjson OUTPUTJSON --outputtxt OUTPUTTXT --sheetname SHEETNAME`
+  
+`usage: excel2json.run [-h] --input INPUT --outputjson OUTPUTJSON --outputtxt OUTPUTTXT --sheetname SHEETNAME`  
+  
+***Usage in Batch mode:**  
+  
+Runs Batch Converting on all xlsx Files in the folder XLSX/ with the first Sheet of the file.  
+  
+`./excel2json.run -bp XLSX/`  
+
+Runs Batch Converting on all xlsx Files in the folder XLSX/ with the sheet with the name "Sheet1".  
+  
+`./excel2json.run -bp XLSX/ -sn Sheet1`  
+  
+
+
   
   
   
